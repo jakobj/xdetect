@@ -118,7 +118,7 @@ def process_patch(patch, *, output_dir, asset, bbox):
 def determine_annotated_assets(output_dir):
     annotated_assets = set()
     rgx = re.compile("(swissimage-dop10_[0-9]{4}_[0-9]{4}-[0-9]{4}_0.1_[0-9]{4}).*.png")
-    for fn in glob.glob(os.path.join(output_dir, "positive", "*.png")):
+    for fn in glob.glob(os.path.join(output_dir, "*.png")):
         annotated_assets.add(rgx.search(fn)[1])
     return annotated_assets
 
@@ -129,7 +129,7 @@ def asset_from_file_name(fn):
 
 def generate_positive_examples(input_dir, output_dir):
 
-    annotated_assets = determine_annotated_assets(output_dir)
+    annotated_assets = determine_annotated_assets(os.path.join(output_dir, "positive"))
 
     for fn in glob.glob(os.path.join(input_dir, "*_0.1_*.tif")):
         asset = asset_from_file_name(fn)
@@ -148,6 +148,6 @@ def generate_positive_examples(input_dir, output_dir):
 
 if __name__ == "__main__":
 
-    input_dir = "./data/"
-    output_dir = "./data_annotated/"
+    input_dir = "../data/"
+    output_dir = "../data_annotated/"
     generate_positive_examples(input_dir, output_dir)

@@ -34,7 +34,7 @@ def get_assets(features, *, output_dir):
 
 if __name__ == "__main__":
 
-    output_dir = "./data/"
+    output_dir = "../data/"
 
     # bbox notation (E, N, E + DE, N + DN)
     # bbox = (7.45137, 46.92466, 7.742596, 46.94179)

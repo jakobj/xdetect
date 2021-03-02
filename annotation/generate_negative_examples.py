@@ -62,7 +62,7 @@ def generate_negative_examples(input_dir, output_dir):
 
 
 if __name__ == "__main__":
-    input_dir = "./data/"
-    output_dir = "./data_annotated/"
+    input_dir = "../data/"
+    output_dir = "../data_annotated/"
 
     generate_negative_examples(input_dir, output_dir)

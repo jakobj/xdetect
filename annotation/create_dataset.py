@@ -26,9 +26,9 @@ def get_examples_as_array(original_dir, input_dir):
 
 if __name__ == '__main__':
 
-    original_dir = "./data/"
-    input_dir = "./data_annotated/"
-    output_dir = "./datasets/"
+    original_dir = "../data/"
+    input_dir = "../data_annotated/"
+    output_dir = "../datasets/"
 
     positive_examples = get_examples_as_array(original_dir, os.path.join(input_dir, 'positive'))
     negative_examples = get_examples_as_array(original_dir, os.path.join(input_dir, 'negative'))
