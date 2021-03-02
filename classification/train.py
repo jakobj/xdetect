@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import DataLoader
 import torchvision
 
-from classifier import Classifier
+from classifier import MLP, ConvNet
 from swissimage_10cm_dataset import SWISSIMAGE10cmDataset
 
 
@@ -64,8 +64,10 @@ if __name__ == '__main__':
     params = {
         'seed': 123,
         'batch_size': 32,
-        'lr': 2e-5,
-        'n_epochs': 40,
+        # 'lr': 2e-5,
+        # 'n_epochs': 50,
+        'lr': 0.5e-3,
+        'n_epochs': 20,
     }
 
     fn_positive = "../datasets/first_dataset_positive.npy"
@@ -76,12 +78,12 @@ if __name__ == '__main__':
     def my_normalization(t):
         return (t - t.mean()) / t.std()  # do not normalize by channel to reduce color distortion(?)
 
-    model = Classifier()
+    model = ConvNet()
     dataset = SWISSIMAGE10cmDataset(fn_positive, fn_negative, transform=torchvision.transforms.Compose([
         torchvision.transforms.ToTensor(),
         torchvision.transforms.RandomHorizontalFlip(),
         torchvision.transforms.Lambda(my_normalization),
-        torchvision.transforms.Lambda(lambda t: t.flatten())
+        # torchvision.transforms.Lambda(lambda t: t.flatten())
     ]))
 
     train(params, model, dataset)
