@@ -55,9 +55,9 @@ def save_patch(patch, *, output_dir, asset, bbox):
     plt.clf()
     plt.imshow(patch)
     fn_out = os.path.join(
-        output_dir, "positive", asset + f"-{'_'.join(str(i) for i in bbox)}.png",
+        output_dir, asset + f"-{'_'.join(str(i) for i in bbox)}.png",
     )
-    print(f"  saving positive example -> {fn_out}")
+    print(f"  saving example -> {fn_out}")
     plt.savefig(fn_out)
     plt.close("all")
 
@@ -95,7 +95,7 @@ def process_patch(patch, *, output_dir, asset, bbox):
     assert bbox[1] % MINIMAL_EDGE_LENGTH == 0
 
     if len(patch) <= MINIMAL_EDGE_LENGTH:
-        save_patch(patch, output_dir=output_dir, asset=asset, bbox=bbox)
+        save_patch(patch, output_dir=os.path.join(output_dir, 'positive'), asset=asset, bbox=bbox)
         return
 
     target_locations = determine_target_locations(patch, bbox=bbox)
@@ -115,22 +115,26 @@ def process_patch(patch, *, output_dir, asset, bbox):
                 # locations were indicated for this patch
 
 
-def determine_annotated_assets(input_dir, output_dir):
+def determine_annotated_assets(output_dir):
     annotated_assets = set()
     rgx = re.compile("(swissimage-dop10_[0-9]{4}_[0-9]{4}-[0-9]{4}_0.1_[0-9]{4}).*.png")
     for fn in glob.glob(os.path.join(output_dir, "positive", "*.png")):
-        annotated_assets.add(os.path.join(input_dir, rgx.search(fn)[1] + ".tif"))
+        annotated_assets.add(rgx.search(fn)[1])
     return annotated_assets
+
+
+def asset_from_file_name(fn):
+    return re.search("\/(swissimage.*)\.tif", fn)[1]
 
 
 def generate_positive_examples(input_dir, output_dir):
 
-    annotated_assets = determine_annotated_assets(input_dir, output_dir)
+    annotated_assets = determine_annotated_assets(output_dir)
 
     for fn in glob.glob(os.path.join(input_dir, "*_0.1_*.tif")):
-        if fn not in annotated_assets:
+        asset = asset_from_file_name(fn)
+        if asset not in annotated_assets:
             print(f"  annotating {fn}")
-            asset = re.search("\/(swissimage.*)\.tif", fn)[1]
             img = io.imread(fn)
             process_patch(
                 img,
