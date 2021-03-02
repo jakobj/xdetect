@@ -89,7 +89,7 @@ def is_loc_in_bbox(loc, bbox):
     )
 
 
-def process_patch(patch, *, output_dir, asset, bbox, may_contain_target):
+def process_patch(patch, *, output_dir, asset, bbox):
 
     assert bbox[0] % MINIMAL_EDGE_LENGTH == 0
     assert bbox[1] % MINIMAL_EDGE_LENGTH == 0
@@ -98,8 +98,7 @@ def process_patch(patch, *, output_dir, asset, bbox, may_contain_target):
         save_patch(patch, output_dir=output_dir, asset=asset, bbox=bbox)
         return
 
-    if may_contain_target:
-        target_locations = determine_target_locations(patch, bbox=bbox)
+    target_locations = determine_target_locations(patch, bbox=bbox)
 
     patches, bboxes = devide_into_patches(patch, bbox=bbox)
     for patch_i, bbox_i in zip(patches, bboxes):
@@ -110,7 +109,6 @@ def process_patch(patch, *, output_dir, asset, bbox, may_contain_target):
                     output_dir=output_dir,
                     asset=asset,
                     bbox=bbox_i,
-                    may_contain_target=True,
                 )
                 break  # since this patch has been processed we can
                 # move on to next patch even if multiple target
@@ -139,7 +137,6 @@ def generate_positive_examples(input_dir, output_dir):
                 output_dir=output_dir,
                 asset=asset,
                 bbox=(0, 0, 10_000, 10_000),
-                may_contain_target=True,
             )
         else:
             print(f"  skipping {fn} - already annotated")
