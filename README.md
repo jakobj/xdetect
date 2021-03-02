@@ -5,3 +5,18 @@ Detect pedestrian crossings (or other persistent structures) in the SWISSIMAGE 1
 
 As part of the [Geo.Hackmin Week](https://cividi.ch/geohackmin-en/) this project's aim is to build a proof of concept for detecting persistent structures in the SWISSIMAGE 10cm dataset.
 > The orthophoto mosaic SWISSIMAGE 10 cm is a composition of new digital color aerial photographs over the whole of Switzerland with a ground resolution of 10 cm in the plain areas and main alpine valleys and 25 cm over the Alps. It is updated in a cycle of 3 years. ([source](https://www.swisstopo.admin.ch/en/geodata/images/ortho/swissimage10.html))
+
+More specifically, we plan to build a classifier which receives image patches of a fixed size and returns a probability that the desired structure is contained in this patch.
+To train the classifier, we require training data consisting of image patches and their binary label ("does contain the structure"/"does not contain the structure").
+Altough there are likely many ways of obtaining such data, here we generate it manually directly from the dataset.
+The classifier itself will most likely be a convolutional neural network.
+
+### Goal
+Automatically detect all pedestrian crossings in aerial photographs of Bern.
+
+### Progress
+- create script for downloading assets, i.e., images, based on bounding box (*done*)
+- create script for extracting training data from assets (<- *in progress*)
+- specify architecture, hyperparameters, and train classifier
+- validate on held-out data (and repeat last step)
+- apply to all assets from Bern
