@@ -4,11 +4,7 @@ import numpy as np
 import os
 from skimage import io
 
-from annotate import (
-    MINIMAL_EDGE_LENGTH,
-    asset_from_file_name,
-    save_patch
-)
+from annotate import MINIMAL_EDGE_LENGTH, asset_from_file_name, save_patch
 
 
 def count_positive_examples(output_dir, *, asset):
@@ -55,7 +51,12 @@ def generate_negative_examples(input_dir, output_dir):
             )
             patch = img[bbox[0] : bbox[2], bbox[1] : bbox[3]]
 
-            save_patch(patch, output_dir=os.path.join(output_dir, "negative"), asset=asset, bbox=bbox)
+            save_patch(
+                patch,
+                output_dir=os.path.join(output_dir, "negative"),
+                asset=asset,
+                bbox=bbox,
+            )
 
             n_negative_examples += 1
 
