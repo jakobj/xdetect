@@ -7,7 +7,14 @@ from classifier import MLP, ConvNet
 from swissimage_10cm_dataset import SWISSIMAGE10cmDataset
 
 
-def validation(model, dataset):
+def normalize(t):
+    return (t - t.mean()) / t.std()  # do not normalize by channel to reduce color distortion(?)
+
+
+def validation(model, dataset, *, batch_size=None):
+
+    if batch_size is None:
+        batch_size = len(dataset)
 
     with torch.no_grad():
         data_loader = DataLoader(dataset, batch_size=len(dataset), shuffle=True)
@@ -54,9 +61,13 @@ def train(params, model, dataset):
     plt.clf()
     plt.subplot(211)
     plt.plot(history_train_loss)
+    plt.ylim(0.0, 1.0)
     plt.subplot(212)
+    plt.ylim(0.5, 1.0)
     plt.plot(history_validation_accuracy)
     plt.savefig('loss.pdf')
+
+    return model
 
 
 if __name__ == '__main__':
@@ -67,7 +78,7 @@ if __name__ == '__main__':
         # 'lr': 2e-5,
         # 'n_epochs': 50,
         'lr': 0.5e-3,
-        'n_epochs': 20,
+        'n_epochs': 35,
     }
 
     fn_positive = "../datasets/first_dataset_positive.npy"
@@ -75,16 +86,13 @@ if __name__ == '__main__':
 
     torch.manual_seed(params['seed'])
 
-    def my_normalization(t):
-        return (t - t.mean()) / t.std()  # do not normalize by channel to reduce color distortion(?)
-
     model = ConvNet()
     dataset = SWISSIMAGE10cmDataset(fn_positive, fn_negative, transform=torchvision.transforms.Compose([
         torchvision.transforms.ToTensor(),
         torchvision.transforms.RandomHorizontalFlip(),
-        torchvision.transforms.Lambda(my_normalization),
+        torchvision.transforms.Lambda(normalize),
         # torchvision.transforms.Lambda(lambda t: t.flatten())
     ]))
 
-    train(params, model, dataset)
+    model = train(params, model, dataset)
     torch.save(model.state_dict(), f"./first_model.torch")
