@@ -12,7 +12,7 @@ from train import normalize, validation
 from swissimage_10cm_dataset import SWISSIMAGE10cmDataset
 
 
-MINIMAL_EDGE_LENGTH = 100
+MINIMAL_EDGE_LENGTH = 50
 
 
 class SegmentedImage(torch.utils.data.Dataset):
@@ -81,13 +81,15 @@ def create_heatmap(img, *, threshold=0.5):
 if __name__ == '__main__':
 
     # fn_test_image = "../data/swissimage-dop10_2018_2599-1198_0.1_2056.tif"
-    fn_test_image = "../data_test/swissimage-dop10_2018_2600-1200_0.1_2056.tif"
+    fn_test_image = "../data/swissimage-dop10_2018_2600-1200_0.1_2056.tif"
     img = io.imread(fn_test_image)
 
     heatmap = create_heatmap(img, threshold=0.99)
     assert img.shape[:2] == heatmap.shape
 
-    plt.imshow(img)
-    plt.imshow(heatmap, alpha=0.4, cmap='Reds', vmin=0, vmax=1)
+    fig = plt.figure(figsize=(12, 12))
+    ax = fig.add_axes([0., 0., 1., 1.])
+    ax.imshow(img)
+    ax.imshow(heatmap, alpha=0.4, cmap='Reds', vmin=0, vmax=1)
     # plt.savefig('test.png', dpi=1200)
     plt.show()

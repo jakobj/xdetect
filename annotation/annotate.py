@@ -8,7 +8,7 @@ from skimage import io
 import api_wrapper
 
 
-MINIMAL_EDGE_LENGTH = 100
+MINIMAL_EDGE_LENGTH = 50
 
 
 def devide_into_patches(patch, *, bbox):
@@ -188,7 +188,7 @@ def determine_annotated_patches(examples_dir, *, asset):
 if __name__ == "__main__":
 
     asset_dir = "../data/"
-    examples_dir = "../data_annotated/"
+    examples_dir = f"../data_annotated_{MINIMAL_EDGE_LENGTH}px/"
 
     # bbox notation (E, N, E + DE, N + DN)
     bbox = (7.42390, 46.93353, 7.45145, 46.95342)

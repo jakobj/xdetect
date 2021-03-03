@@ -66,6 +66,7 @@ def train(params, model, dataset):
     plt.ylim(0.5, 1.0)
     plt.plot(history_validation_accuracy)
     plt.savefig('loss.pdf')
+    print(f'final acc: {history_validation_accuracy[-1]:.04f}')
 
     return model
 
@@ -76,18 +77,19 @@ if __name__ == '__main__':
         'seed': 123,
         'batch_size': 32,
         'lr': 0.5e-3,
-        'n_epochs': 35,
+        'n_epochs': 45,
     }
 
-    fn_positive = "../datasets/first_dataset_positive.npy"
-    fn_negative = "../datasets/first_dataset_negative.npy"
+    asset_dir = "../data/"
+    examples_dir = f"../data_annotated_50px/"
 
     torch.manual_seed(params['seed'])
 
     model = ConvNet()
-    dataset = SWISSIMAGE10cmDataset(fn_positive, fn_negative, transform=torchvision.transforms.Compose([
+    dataset = SWISSIMAGE10cmDataset(asset_dir, examples_dir, transform=torchvision.transforms.Compose([
         torchvision.transforms.ToTensor(),
         torchvision.transforms.RandomHorizontalFlip(),
+        torchvision.transforms.RandomVerticalFlip(),
         torchvision.transforms.Lambda(normalize),
     ]))
 
