@@ -6,6 +6,8 @@ URL = "https://data.geo.admin.ch/api/stac/v0.9/collections/ch.swisstopo.swissima
 
 
 def get_features_from_bbox(bbox):
+    """Return all features for bounding box"""
+
     r = requests.get(URL.format(bbox=",".join(str(f) for f in bbox)))
     if r.status_code != 200:
         raise RuntimeError(r.text)
@@ -16,6 +18,8 @@ def get_features_from_bbox(bbox):
 
 
 def get_assets_from_features(features, *, output_dir):
+    """Download 0.1cm assets (images) for each feature and store locally."""
+
     for feature in features:
         identifier = feature["id"]
         rgx = re.compile(f"{identifier}_0\.1_.*\.tif")
@@ -33,4 +37,6 @@ def get_assets_from_features(features, *, output_dir):
 
 
 def get_assets_from_bbox(bbox, output_dir):
+    """Download 0.1cm assets (images) for bounding box and store locally."""
+
     return get_assets_from_features(get_features_from_bbox(bbox), output_dir=output_dir)
