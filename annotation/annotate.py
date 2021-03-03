@@ -82,7 +82,7 @@ def determine_target_locations(patch, *, bbox, annotated_patches):
     fig = plt.figure(figsize=(12, 12))
     ax = fig.add_axes([0.0, 0.0, 1.0, 1.0])
     fig.suptitle(
-        "please click all tiles with the target category", color="r", fontsize=20
+        f"please select all tiles with the target category ({'/'.join(keys)})", color="r", fontsize=20
     )
     ax.imshow(patch, rasterized=True)
     ax.axhline(len(patch) // 2, lw=3, color="r")

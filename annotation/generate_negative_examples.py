@@ -1,30 +1,27 @@
 import glob
-import matplotlib.pyplot as plt
 import numpy as np
 import os
 from skimage import io
 
-from annotate import MINIMAL_EDGE_LENGTH, asset_from_file_name, save_patch
+from annotate import MINIMAL_EDGE_LENGTH, asset_from_file_name, save_patch, mkdirp
 
 
-def count_positive_examples(output_dir, *, asset):
-    return len(glob.glob(os.path.join(output_dir, "positive", f"{asset}*.png")))
+def count_examples(examples_dir, *, asset):
+    return len(glob.glob(os.path.join(examples_dir, f"{asset}*.png")))
 
 
-def count_negative_examples(output_dir, *, asset):
-    return len(glob.glob(os.path.join(output_dir, "negative", f"{asset}*.png")))
+def generate_negative_examples(asset_dir, examples_dir):
 
+    mkdirp(os.path.join(examples_dir, 'negative'))
 
-def generate_negative_examples(input_dir, output_dir):
-
-    for fn in glob.glob(os.path.join(input_dir, "*_0.1_*.tif")):
+    for fn in glob.glob(os.path.join(asset_dir, "*_0.1_*.tif")):
 
         asset = asset_from_file_name(fn)
-        n_positive_examples = count_positive_examples(output_dir, asset=asset)
+        n_positive_examples = count_examples(os.path.join(examples_dir, 'positive'), asset=asset)
         if n_positive_examples == 0:
             continue
 
-        n_negative_examples = count_negative_examples(output_dir, asset=asset)
+        n_negative_examples = count_examples(os.path.join(examples_dir, 'negative'), asset=asset)
         if n_negative_examples > n_positive_examples:
             raise RuntimeError(
                 f"too many negative examples for asset '{asset}' - remove a few"
@@ -53,7 +50,7 @@ def generate_negative_examples(input_dir, output_dir):
 
             save_patch(
                 patch,
-                output_dir=os.path.join(output_dir, "negative"),
+                output_dir=os.path.join(examples_dir, "negative"),
                 asset=asset,
                 bbox=bbox,
             )
@@ -62,7 +59,7 @@ def generate_negative_examples(input_dir, output_dir):
 
 
 if __name__ == "__main__":
-    input_dir = "../data/"
-    output_dir = "../data_annotated/"
+    asset_dir = "../data/"
+    examples_dir = f"../data_annotated_{MINIMAL_EDGE_LENGTH}px/"
 
-    generate_negative_examples(input_dir, output_dir)
+    generate_negative_examples(asset_dir, examples_dir)
