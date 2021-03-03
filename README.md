@@ -16,7 +16,19 @@ Automatically detect all pedestrian crossings in aerial photographs of Bern.
 
 ### Progress
 - create script for downloading assets, i.e., images, based on bounding box (*done*)
-- create script for extracting training data from assets (<- *in progress*)
-- specify architecture, hyperparameters, and train classifier
+- create script for manually extracting training data from assets (*done*?)
+- [optional] explore smarter ways of obtaining training data
+- specify architecture, hyperparameters, and train classifier (<- *in progress*)
 - validate on held-out data (and repeat last step)
 - apply to all assets from Bern
+
+### Resources (data)
+  - https://www.swisstopo.admin.ch/en/geodata/images/ortho/swissimage10.html
+  - https://www.geo.admin.ch/de/geo-dienstleistungen/geodienste/download-services/stac-api.html
+  - https://data.geo.admin.ch/api/stac/v0.9/
+
+### Resources (methods)
+  - https://giswiki.hsr.ch/Zebrasteifen-Safari (mostly in german)
+  - https://github.com/geometalab/OSMDeepOD
+  - https://www.cs.toronto.edu/~vmnih/docs/Mnih_Volodymyr_PhD_Thesis.pdf
+  - https://github.com/robmarkcole/satellite-image-deep-learning
