@@ -67,8 +67,16 @@ def save_patch(patch, *, output_dir, asset, bbox):
 def determine_target_locations(patch, *, bbox):
     target_locations = []
 
-    def onclick(event):
-        target_locations.append((bbox[0] + event.ydata, bbox[1] + event.xdata))
+    keys = 'uijk'
+    def onpress(event):
+        if event.key == keys[0]:
+            target_locations.append((bbox[0], bbox[1]))
+        elif event.key == keys[1]:
+            target_locations.append((bbox[0], bbox[3] - 1))
+        elif event.key == keys[2]:
+            target_locations.append((bbox[2] - 1, bbox[1]))
+        elif event.key == keys[3]:
+            target_locations.append((bbox[2] - 1, bbox[3] - 1))
 
     fig = plt.figure(figsize=(12, 12))
     ax = fig.add_axes([0.0, 0.0, 1.0, 1.0])
@@ -78,7 +86,7 @@ def determine_target_locations(patch, *, bbox):
     ax.imshow(patch, rasterized=True)
     ax.axhline(len(patch) // 2, lw=3, color="r")
     ax.axvline(len(patch[0]) // 2, lw=3, color="r")
-    fig.canvas.mpl_connect("button_press_event", onclick)
+    fig.canvas.mpl_connect("key_press_event", onpress)
     plt.show()
     plt.close("all")
 

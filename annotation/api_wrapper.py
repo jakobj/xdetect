@@ -37,6 +37,6 @@ def get_assets_from_features(features, *, output_dir):
 
 
 def get_assets_from_bbox(bbox, output_dir):
-    """Download 0.1cm assets (images) for bounding box and store locally."""
+    """Download all 0.1cm assets (images) for bounding box and store locally."""
 
     return get_assets_from_features(get_features_from_bbox(bbox), output_dir=output_dir)
