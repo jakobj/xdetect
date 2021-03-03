@@ -21,6 +21,7 @@ Automatically detect all pedestrian crossings in aerial photographs of Bern.
 - specify architecture, hyperparameters, and train classifier (<- *in progress*)
 - validate on held-out data (and repeat last step)
 - apply to all assets from Bern
+- export results in a format compatible with [the map](https://map.geo.admin.ch/)
 
 ### Resources (data)
   - https://www.swisstopo.admin.ch/en/geodata/images/ortho/swissimage10.html
