@@ -1,5 +1,6 @@
 import glob
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 import os
 import re
 from skimage import io
@@ -64,7 +65,7 @@ def save_patch(patch, *, output_dir, asset, bbox):
     plt.close("all")
 
 
-def determine_target_locations(patch, *, bbox):
+def determine_target_locations(patch, *, bbox, annotated_patches):
     target_locations = []
 
     keys = 'uijk'
@@ -86,11 +87,22 @@ def determine_target_locations(patch, *, bbox):
     ax.imshow(patch, rasterized=True)
     ax.axhline(len(patch) // 2, lw=3, color="r")
     ax.axvline(len(patch[0]) // 2, lw=3, color="r")
+    draw_annotated_patches(ax, bbox=bbox, annotated_patches=annotated_patches)
     fig.canvas.mpl_connect("key_press_event", onpress)
     plt.show()
     plt.close("all")
 
     return target_locations
+
+
+def draw_annotated_patches(ax, *, bbox, annotated_patches):
+    for annotated_patch in annotated_patches:
+        if is_loc_in_bbox(annotated_patch[:2], bbox) and is_loc_in_bbox(annotated_patch[2:], bbox):
+            y = annotated_patch[0] - bbox[0]
+            Dy = annotated_patch[2] - bbox[0] - y
+            x = annotated_patch[1] - bbox[1]
+            Dx = annotated_patch[3] - bbox[1] - x
+            ax.add_patch(Rectangle((x, y), Dx, Dy, color='red', alpha=0.4))
 
 
 def is_loc_in_bbox(loc, bbox):
@@ -99,7 +111,7 @@ def is_loc_in_bbox(loc, bbox):
     )
 
 
-def process_patch(patch, *, output_dir, asset, bbox):
+def process_patch(patch, *, output_dir, asset, bbox, annotated_patches):
 
     assert bbox[0] % MINIMAL_EDGE_LENGTH == 0
     assert bbox[1] % MINIMAL_EDGE_LENGTH == 0
@@ -108,7 +120,7 @@ def process_patch(patch, *, output_dir, asset, bbox):
         save_patch(patch, output_dir=os.path.join(output_dir, 'positive'), asset=asset, bbox=bbox)
         return
 
-    target_locations = determine_target_locations(patch, bbox=bbox)
+    target_locations = determine_target_locations(patch, bbox=bbox, annotated_patches=annotated_patches)
 
     patches, bboxes = devide_into_patches(patch, bbox=bbox)
     for patch_i, bbox_i in zip(patches, bboxes):
@@ -119,18 +131,11 @@ def process_patch(patch, *, output_dir, asset, bbox):
                     output_dir=output_dir,
                     asset=asset,
                     bbox=bbox_i,
+                    annotated_patches=annotated_patches
                 )
                 break  # since this patch has been processed we can
                 # move on to next patch even if multiple target
                 # locations were indicated for this patch
-
-
-def determine_annotated_assets(output_dir):
-    annotated_assets = set()
-    rgx = re.compile("(swissimage-dop10_[0-9]{4}_[0-9]{4}-[0-9]{4}_0.1_[0-9]{4}).*.png")
-    for fn in glob.glob(os.path.join(output_dir, "*.png")):
-        annotated_assets.add(rgx.search(fn)[1])
-    return annotated_assets
 
 
 def asset_from_file_name(fn):
@@ -142,25 +147,42 @@ def generate_positive_examples_from_assets(asset_dir, examples_dir):
     mkdirp(examples_dir)
     mkdirp(os.path.join(examples_dir, 'positive'))
 
-    annotated_assets = determine_annotated_assets(os.path.join(examples_dir, "positive"))
-
     for fn in glob.glob(os.path.join(asset_dir, "*_0.1_*.tif")):
         asset = asset_from_file_name(fn)
-        if asset not in annotated_assets:
-            print(f"  annotating {fn}")
-            img = io.imread(fn)
-            process_patch(
-                img,
-                output_dir=examples_dir,
-                asset=asset,
-                bbox=(0, 0, 10_000, 10_000),
-            )
-        else:
-            print(f"  skipping {fn} - already annotated")
+        annotated_patches = determine_annotated_patches(examples_dir, asset=asset)
+        if len(annotated_patches) > 0:
+            print(f"  {fn} has already been annotated")
+            inp = ""
+            while inp not in ('y', 'n'):
+                inp = input("  reannotate asset? (y/n) ")
+            if inp == "y":
+                pass
+            elif inp == "n":
+                continue
+
+        print(f"  annotating {fn}")
+        img = io.imread(fn)
+        process_patch(
+            img,
+            output_dir=examples_dir,
+            asset=asset,
+            bbox=(0, 0, 10_000, 10_000),
+            annotated_patches=annotated_patches,
+        )
 
 
 def mkdirp(directory):
     os.makedirs(directory, exist_ok=True)
+
+
+def determine_annotated_patches(examples_dir, *, asset):
+    annotated_patches = []
+    rgx = re.compile(os.path.join(examples_dir, 'positive', f"{asset}-([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+).png"))
+    for fn in sorted(glob.glob(os.path.join(examples_dir, 'positive', f"{asset}*.png"))):
+        match = rgx.search(fn)
+        y, x, yDy, xDx = int(match[1]), int(match[2]), int(match[3]), int(match[4])
+        annotated_patches.append([y, x, yDy, xDx])
+    return annotated_patches
 
 
 if __name__ == "__main__":
