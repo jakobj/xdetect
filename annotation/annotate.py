@@ -4,6 +4,8 @@ import os
 import re
 from skimage import io
 
+import api_wrapper
+
 
 MINIMAL_EDGE_LENGTH = 100
 
@@ -127,18 +129,18 @@ def asset_from_file_name(fn):
     return re.search("\/(swissimage.*)\.tif", fn)[1]
 
 
-def generate_positive_examples(input_dir, output_dir):
+def generate_positive_examples_from_assets(asset_dir, examples_dir):
 
-    annotated_assets = determine_annotated_assets(os.path.join(output_dir, "positive"))
+    annotated_assets = determine_annotated_assets(os.path.join(examples_dir, "positive"))
 
-    for fn in glob.glob(os.path.join(input_dir, "*_0.1_*.tif")):
+    for fn in glob.glob(os.path.join(asset_dir, "*_0.1_*.tif")):
         asset = asset_from_file_name(fn)
         if asset not in annotated_assets:
             print(f"  annotating {fn}")
             img = io.imread(fn)
             process_patch(
                 img,
-                output_dir=output_dir,
+                output_dir=examples_dir,
                 asset=asset,
                 bbox=(0, 0, 10_000, 10_000),
             )
@@ -148,6 +150,10 @@ def generate_positive_examples(input_dir, output_dir):
 
 if __name__ == "__main__":
 
-    input_dir = "../data/"
-    output_dir = "../data_annotated/"
-    generate_positive_examples(input_dir, output_dir)
+    asset_dir = "../data/"
+    examples_dir = "../data_annotated/"
+
+    # bbox notation (E, N, E + DE, N + DN)
+    bbox = (7.42390, 46.93353, 7.45145, 46.95342)
+    api_wrapper.get_assets_from_bbox(bbox, output_dir=asset_dir)
+    generate_positive_examples_from_assets(asset_dir, examples_dir)

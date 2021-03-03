@@ -5,7 +5,7 @@ import re
 URL = "https://data.geo.admin.ch/api/stac/v0.9/collections/ch.swisstopo.swissimage-dop10/items?bbox={bbox}"
 
 
-def get_features(bbox):
+def get_features_from_bbox(bbox):
     r = requests.get(URL.format(bbox=",".join(str(f) for f in bbox)))
     if r.status_code != 200:
         raise RuntimeError(r.text)
@@ -15,7 +15,7 @@ def get_features(bbox):
     return features
 
 
-def get_assets(features, *, output_dir):
+def get_assets_from_features(features, *, output_dir):
     for feature in features:
         identifier = feature["id"]
         rgx = re.compile(f"{identifier}_0\.1_.*\.tif")
@@ -32,11 +32,5 @@ def get_assets(features, *, output_dir):
                     print(f"  skipping asset '{a}' - file exists")
 
 
-if __name__ == "__main__":
-
-    output_dir = "../data/"
-
-    # bbox notation (E, N, E + DE, N + DN)
-    # bbox = (7.45137, 46.92466, 7.742596, 46.94179)
-    bbox = (7.43390, 46.93353, 7.45145, 46.93942)
-    get_assets(get_features(bbox), output_dir=output_dir)
+def get_assets_from_bbox(bbox, output_dir):
+    return get_assets_from_features(get_features_from_bbox(bbox), output_dir=output_dir)
