@@ -7,6 +7,9 @@ from classifier import ConvNet
 from swissimage_10cm_dataset import SWISSIMAGE10cmDataset
 
 
+MINIMAL_EDGE_LENGTH = 50
+
+
 def normalize(t):
     return (t - t.mean()) / t.std()  # do not normalize by channel to reduce color distortion(?)
 
@@ -43,8 +46,6 @@ def train(params, model, dataset):
     history_validation_accuracy = torch.empty(params['n_epochs'])
     for e in range(params['n_epochs']):
 
-        print(f"\repoch {e + 1}/{params['n_epochs']}", end="", flush=True)
-
         data_loader = DataLoader(dataset_train, batch_size=params['batch_size'], shuffle=True)
         for x, c in data_loader:
 
@@ -54,6 +55,8 @@ def train(params, model, dataset):
             model.zero_grad()
             loss.backward()
             opt.step()
+
+        print(f"\repoch {e + 1}/{params['n_epochs']}; loss: {loss.item()}", end="", flush=True)
 
         history_train_loss[e] = loss.item()
         history_validation_accuracy[e] = validation(model, dataset_validation)
@@ -75,9 +78,9 @@ if __name__ == '__main__':
 
     params = {
         'seed': 123,
-        'batch_size': 32,
-        'lr': 0.5e-3,
-        'n_epochs': 45,
+        'batch_size': 64,
+        'lr': 0.5e-4,
+        'n_epochs': 3 * 128,
     }
 
     asset_dir = "../data/"
