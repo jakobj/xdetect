@@ -13,8 +13,8 @@ class SWISSIMAGE10cmDataset(torch.utils.data.Dataset):
         positive_examples = self.get_examples_as_array(asset_dir, os.path.join(examples_dir, 'positive'))
         negative_examples = self.get_examples_as_array(asset_dir, os.path.join(examples_dir, 'negative'))
 
-        if len(positive_examples) != len(negative_examples):
-            raise RuntimeError("imbalanced dataset - make sure the number of positive and negative examples are identical")
+        # if len(positive_examples) != len(negative_examples):
+        #     raise RuntimeError("imbalanced dataset - make sure the number of positive and negative examples are identical")
 
         self.data = np.vstack([positive_examples, negative_examples])
         self.labels = np.hstack([np.ones(len(positive_examples), dtype=np.long), np.zeros(len(negative_examples), dtype=np.long)])

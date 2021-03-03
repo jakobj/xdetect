@@ -6,6 +6,9 @@ from skimage import io
 from annotate import MINIMAL_EDGE_LENGTH, asset_from_file_name, save_patch, mkdirp
 
 
+REL_NUMBER_NEGATIVE_EXAMPLES = 2
+
+
 def count_examples(examples_dir, *, asset):
     return len(glob.glob(os.path.join(examples_dir, f"{asset}*.png")))
 
@@ -22,7 +25,7 @@ def generate_negative_examples(asset_dir, examples_dir):
             continue
 
         n_negative_examples = count_examples(os.path.join(examples_dir, 'negative'), asset=asset)
-        if n_negative_examples > n_positive_examples:
+        if n_negative_examples > REL_NUMBER_NEGATIVE_EXAMPLES * n_positive_examples:
             raise RuntimeError(
                 f"too many negative examples for asset '{asset}' - remove a few"
             )
@@ -35,7 +38,7 @@ def generate_negative_examples(asset_dir, examples_dir):
         assert n_rows * MINIMAL_EDGE_LENGTH == img.shape[0]
         assert n_cols * MINIMAL_EDGE_LENGTH == img.shape[1]
 
-        while n_negative_examples < n_positive_examples:
+        while n_negative_examples < REL_NUMBER_NEGATIVE_EXAMPLES * n_positive_examples:
 
             row = np.random.randint(n_rows)
             col = np.random.randint(n_cols)
