@@ -139,6 +139,9 @@ def asset_from_file_name(fn):
 
 def generate_positive_examples_from_assets(asset_dir, examples_dir):
 
+    mkdirp(examples_dir)
+    mkdirp(os.path.join(examples_dir, 'positive'))
+
     annotated_assets = determine_annotated_assets(os.path.join(examples_dir, "positive"))
 
     for fn in glob.glob(os.path.join(asset_dir, "*_0.1_*.tif")):
@@ -154,6 +157,10 @@ def generate_positive_examples_from_assets(asset_dir, examples_dir):
             )
         else:
             print(f"  skipping {fn} - already annotated")
+
+
+def mkdirp(directory):
+    os.makedirs(directory, exist_ok=True)
 
 
 if __name__ == "__main__":
