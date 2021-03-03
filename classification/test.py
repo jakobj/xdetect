@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 import torchvision
 
 
-from classifier import MLP, ConvNet
+from classifier import ConvNet
 from train import normalize, validation
 from swissimage_10cm_dataset import SWISSIMAGE10cmDataset
 

@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import DataLoader
 import torchvision
 
-from classifier import MLP, ConvNet
+from classifier import ConvNet
 from swissimage_10cm_dataset import SWISSIMAGE10cmDataset
 
 
@@ -75,8 +75,6 @@ if __name__ == '__main__':
     params = {
         'seed': 123,
         'batch_size': 32,
-        # 'lr': 2e-5,
-        # 'n_epochs': 50,
         'lr': 0.5e-3,
         'n_epochs': 35,
     }
@@ -91,7 +89,6 @@ if __name__ == '__main__':
         torchvision.transforms.ToTensor(),
         torchvision.transforms.RandomHorizontalFlip(),
         torchvision.transforms.Lambda(normalize),
-        # torchvision.transforms.Lambda(lambda t: t.flatten())
     ]))
 
     model = train(params, model, dataset)
