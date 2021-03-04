@@ -1,3 +1,4 @@
+import csv
 import glob
 import json
 import matplotlib.pyplot as plt
@@ -11,7 +12,7 @@ import torchvision
 import re
 import sys
 
-from test import determine_target_bboxes, draw_bboxes
+from test_overview import determine_target_bboxes, draw_bboxes
 
 sys.path.insert(0, "../annotation/")
 from annotate import identifier_from_asset
@@ -27,53 +28,33 @@ def compute_midpoint(bbox):
 
 
 def compute_coords_from_pixel_location(*, point, n_img_rows, n_img_cols, coords_bbox):
+    n_img_rows = 10_000
+    n_img_cols = 10_000
     slope_rows = (coords_bbox[1] - coords_bbox[3]) / n_img_rows
     slope_cols = (coords_bbox[2] - coords_bbox[0]) / n_img_cols
     return np.round(coords_bbox[3] + slope_rows * point[0], 7), np.round(coords_bbox[0] + slope_cols * point[1], 7)
 
 
-FILE_TEMPLATE = """\
-<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-<Document>
-  <name>Classified POIs - {class_label}</name>
-  {placemarks}
-</Document>
-</kml>
-"""
-
-PLACEMARK_TEMPLATE = """\
-  <Placemark id="{name}">
-    <name>{name}</name>
-    <Point>
-      <coordinates>{coords_E},{coords_N},0.00</coordinates>
-    </Point>
-  </Placemark>"""
-
 if __name__ == '__main__':
 
-    class_label = 'Crosswalk'
+    asset_dir = "../data/"
+    assets = ["swissimage-dop10_2018_2600-1200_0.1_2056.tif", "swissimage-dop10_2018_2598-1200_0.1_2056.tif"]
 
-    fn_asset = "../data/swissimage-dop10_2018_2600-1200_0.1_2056.tif"
-    img = io.imread(fn_asset)
-
-    identifier = identifier_from_asset(os.path.basename(fn_asset))
-    metadata = load_metadata(asset_dir=os.path.dirname(fn_asset), identifier=identifier)
-    coords_bbox_asset = metadata['bbox']
-
-    target_bboxes = determine_target_bboxes(img, threshold=0.9999)
     coordinates = []
-    for bbox in target_bboxes:
-        midpoint = compute_midpoint(bbox)
-        coords = compute_coords_from_pixel_location(point=midpoint, n_img_rows=len(img), n_img_cols=len(img[0]), coords_bbox=coords_bbox_asset)
-        coordinates.append(coords)
+    for asset in assets:
+        img = io.imread(os.path.join(asset_dir, asset))
+        # img = img[:2000, :2000]
 
-    placemarks = []
-    for i, coords in enumerate(coordinates):
-        placemark = PLACEMARK_TEMPLATE.format(name=f"{class_label}-{i}", coords_N=coords[0], coords_E=coords[1])
-        placemarks.append(placemark)
+        identifier = identifier_from_asset(asset)
+        metadata = load_metadata(asset_dir=asset_dir, identifier=identifier)
+        coords_bbox_asset = metadata['bbox']
 
-    kml_data = FILE_TEMPLATE.format(class_label=class_label, placemarks='\n'.join(placemarks))
+        target_bboxes = determine_target_bboxes(img=img, threshold=0.999)
+        for bbox in target_bboxes:
+            midpoint = compute_midpoint(bbox)
+            coordinates.append(compute_coords_from_pixel_location(point=midpoint, n_img_rows=len(img), n_img_cols=len(img[0]), coords_bbox=coords_bbox_asset))
 
-    with open('exported_POIs.kml', 'w') as f:
-        f.write(kml_data)
+    with open('exported_POIs.csv', 'w') as f:
+        writer = csv.writer(f, delimiter=',')
+        for c in coordinates:
+            writer.writerow(c)
