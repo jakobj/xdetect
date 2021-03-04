@@ -1,21 +1,21 @@
 import csv
-import glob
 import json
-import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
 import numpy as np
 import os
+# import pandas as pd
+import geopandas as gpd
+import shapely.geometry
 from skimage import io
-import torch
-from torch.utils.data import DataLoader
-import torchvision
-import re
 import sys
 
-from test_overview import determine_target_bboxes, draw_bboxes
+from test_precision_recall import THRESHOLD
+import lib_classification
 
 sys.path.insert(0, "../annotation/")
-from annotate import identifier_from_asset
+from annotate import identifier_from_asset, asset_prefix_from_asset
+
+
+gpd.io.file.fiona.drvsupport.supported_drivers['KML'] = 'rw'
 
 
 def load_metadata(*, asset_dir, identifier):
@@ -27,34 +27,60 @@ def compute_midpoint(bbox):
     return bbox[0] + (bbox[2] - bbox[0]) // 2, bbox[1] + (bbox[3] - bbox[1]) // 2
 
 
-def compute_coords_from_pixel_location(*, point, n_img_rows, n_img_cols, coords_bbox):
+def compute_coordinates_from_bbox(*, bbox, n_img_rows, n_img_cols, coordinates_bbox):
+    def convert_y(y):
+        return np.round(coordinates_bbox[3] + slope_rows * y, 7)
+    def convert_x(x):
+        return np.round(coordinates_bbox[0] + slope_cols * x, 7)
+
     n_img_rows = 10_000
     n_img_cols = 10_000
-    slope_rows = (coords_bbox[1] - coords_bbox[3]) / n_img_rows
-    slope_cols = (coords_bbox[2] - coords_bbox[0]) / n_img_cols
-    return np.round(coords_bbox[3] + slope_rows * point[0], 7), np.round(coords_bbox[0] + slope_cols * point[1], 7)
+    slope_rows = (coordinates_bbox[1] - coordinates_bbox[3]) / n_img_rows
+    slope_cols = (coordinates_bbox[2] - coordinates_bbox[0]) / n_img_cols
+    return (convert_y(bbox[0]), convert_x(bbox[1]), convert_y(bbox[2]), convert_x(bbox[3]))
+
+
+def create_polygon_from_coordinates(coordinates):
+    # return (coordinates[0], coordinates[1]), (coordinates[0], coordinates[3]), (coordinates[1], coordinates[3]), (coordinates[1], coordinates[1]), (coordinates[0], coordinates[1])
+    return (coordinates[1], coordinates[0]), (coordinates[3], coordinates[0]), (coordinates[3], coordinates[2]), (coordinates[1], coordinates[2]), (coordinates[1], coordinates[0])
 
 
 if __name__ == '__main__':
 
     asset_dir = "../data/"
-    assets = ["swissimage-dop10_2018_2600-1200_0.1_2056.tif", "swissimage-dop10_2018_2598-1200_0.1_2056.tif"]
+    assets = ["swissimage-dop10_2018_2598-1198_0.1_2056.tif",
+              "swissimage-dop10_2018_2598-1199_0.1_2056.tif",
+              "swissimage-dop10_2018_2598-1200_0.1_2056.tif",
+              "swissimage-dop10_2018_2599-1198_0.1_2056.tif",
+              "swissimage-dop10_2018_2599-1199_0.1_2056.tif",
+              "swissimage-dop10_2018_2599-1200_0.1_2056.tif",
+              "swissimage-dop10_2018_2600-1198_0.1_2056.tif",
+              "swissimage-dop10_2018_2600-1199_0.1_2056.tif",
+              "swissimage-dop10_2018_2600-1200_0.1_2056.tif"]
+    export_dir = "../data_exported/"
 
-    coordinates = []
     for asset in assets:
+        print(f"  processing asset '{asset}'")
         img = io.imread(os.path.join(asset_dir, asset))
-        # img = img[:2000, :2000]
+        img = img[:3000, :3000]
 
         identifier = identifier_from_asset(asset)
         metadata = load_metadata(asset_dir=asset_dir, identifier=identifier)
-        coords_bbox_asset = metadata['bbox']
+        coordinates_bbox_asset = metadata['bbox']
 
-        target_bboxes = determine_target_bboxes(img=img, threshold=0.999)
+        target_bboxes = lib_classification.determine_target_bboxes(img=img, threshold=THRESHOLD)
+        coordinates = []
         for bbox in target_bboxes:
-            midpoint = compute_midpoint(bbox)
-            coordinates.append(compute_coords_from_pixel_location(point=midpoint, n_img_rows=len(img), n_img_cols=len(img[0]), coords_bbox=coords_bbox_asset))
+            coordinates.append(compute_coordinates_from_bbox(bbox=bbox, n_img_rows=len(img), n_img_cols=len(img[0]), coordinates_bbox=coordinates_bbox_asset))
 
-    with open('exported_POIs.csv', 'w') as f:
-        writer = csv.writer(f, delimiter=',')
-        for c in coordinates:
-            writer.writerow(c)
+        polygons = []
+        for coords in coordinates:
+            polygons.append(shapely.geometry.Polygon(create_polygon_from_coordinates(coords)))
+
+        asset_prefix = asset_prefix_from_asset(asset)
+        gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(polygons))
+        gdf = gdf.set_crs("EPSG:4326")
+        fn = os.path.join(export_dir, f'ROIs-{asset_prefix}.kml')
+        gdf.to_file(fn, driver='KML')
+        print(f"    -> exported to {fn}")
+        exit()
