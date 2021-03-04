@@ -64,10 +64,13 @@ def train(params, model, dataset):
     plt.clf()
     plt.subplot(211)
     plt.plot(history_train_loss)
+    plt.ylabel('Train loss')
     plt.ylim(0.0, 1.0)
     plt.subplot(212)
     plt.ylim(0.5, 1.0)
     plt.plot(history_validation_accuracy)
+    plt.xlabel('Epoch')
+    plt.ylabel('Valid. acc.')
     plt.savefig('loss.pdf')
     print(f'final acc: {history_validation_accuracy[-1]:.04f}')
 
@@ -80,7 +83,7 @@ if __name__ == '__main__':
         'seed': 123,
         'batch_size': 64,
         'lr': 0.5e-4,
-        'n_epochs': 3 * 128,
+        'n_epochs': 4 * 128,
     }
 
     asset_dir = "../data/"
@@ -93,6 +96,7 @@ if __name__ == '__main__':
         torchvision.transforms.ToTensor(),
         torchvision.transforms.RandomHorizontalFlip(),
         torchvision.transforms.RandomVerticalFlip(),
+        torchvision.transforms.RandomResizedCrop((MINIMAL_EDGE_LENGTH, MINIMAL_EDGE_LENGTH), scale=(0.98, 1.0), ratio=(1.0, 1.0)),
         torchvision.transforms.Lambda(normalize),
     ]))
 

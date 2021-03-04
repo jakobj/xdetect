@@ -10,7 +10,7 @@ class ConvNet(torch.nn.Module):
         self.conv_layers = torch.nn.Sequential(
             torch.nn.Conv2d(in_channels=3, out_channels=8, kernel_size=6, stride=2, padding=0),
             torch.nn.ReLU(),
-            torch.nn.MaxPool2d(kernel_size=2, stride=2)
+            torch.nn.MaxPool2d(kernel_size=3, stride=2)
         )
 
         self.fc_layers = torch.nn.Sequential(
