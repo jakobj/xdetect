@@ -2,25 +2,22 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import numpy as np
 from skimage import io
-import skimage.transform
 import torch
 from torch.utils.data import DataLoader
 import torchvision
 import sys
 
 from classifier import ConvNet
-from train import normalize, validation
-from swissimage_10cm_dataset import SWISSIMAGE10cmDataset
+from train import normalize
 
 
 from train import MINIMAL_EDGE_LENGTH
 
-sys.path.insert(0, '../annotation/')
+sys.path.insert(0, "../annotation/")
 from annotate import asset_from_file_name, mkdirp, save_patch
 
 
 class SegmentedImage(torch.utils.data.Dataset):
-
     def __init__(self, img, transform=None):
 
         self.patches = self.segment_image(img)
@@ -35,20 +32,32 @@ class SegmentedImage(torch.utils.data.Dataset):
         n_rows = int(img.shape[0] // self.effective_edge_width)
         n_cols = n_rows
 
-        patches = np.empty((n_rows, n_cols, MINIMAL_EDGE_LENGTH, MINIMAL_EDGE_LENGTH, 3), dtype=np.float32)
+        patches = np.empty(
+            (n_rows, n_cols, MINIMAL_EDGE_LENGTH, MINIMAL_EDGE_LENGTH, 3),
+            dtype=np.float32,
+        )
         for i in range(n_rows):
             for j in range(n_cols):
-                patches[i, j] = img[self.get_rows(i, len(img)), self.get_cols(j, len(img[i]))] / 255.
+                patches[i, j] = (
+                    img[self.get_rows(i, len(img)), self.get_cols(j, len(img[i]))]
+                    / 255.0
+                )
         return patches
 
     def get_rows(self, i, n_img_rows):
-        rows = slice(i * self.effective_edge_width, i * self.effective_edge_width + MINIMAL_EDGE_LENGTH)
+        rows = slice(
+            i * self.effective_edge_width,
+            i * self.effective_edge_width + MINIMAL_EDGE_LENGTH,
+        )
         if rows.stop > n_img_rows:
             rows = slice(n_img_rows - MINIMAL_EDGE_LENGTH, n_img_rows)
         return rows
 
     def get_cols(self, j, n_img_cols):
-        cols = slice(j * self.effective_edge_width, j * self.effective_edge_width + MINIMAL_EDGE_LENGTH)
+        cols = slice(
+            j * self.effective_edge_width,
+            j * self.effective_edge_width + MINIMAL_EDGE_LENGTH,
+        )
         if cols.stop > n_img_cols:
             cols = slice(n_img_cols - MINIMAL_EDGE_LENGTH, n_img_cols)
         return cols
@@ -84,10 +93,15 @@ class SegmentedImage(torch.utils.data.Dataset):
 
 def determine_target_bboxes(img, *, threshold=0.5):
 
-    dataset = SegmentedImage(img, transform=torchvision.transforms.Compose([
-        torchvision.transforms.ToTensor(),
-        torchvision.transforms.Lambda(normalize),
-    ]))
+    dataset = SegmentedImage(
+        img,
+        transform=torchvision.transforms.Compose(
+            [
+                torchvision.transforms.ToTensor(),
+                torchvision.transforms.Lambda(normalize),
+            ]
+        ),
+    )
     data_loader = DataLoader(dataset, batch_size=dataset.n_cols, shuffle=False)
 
     model = ConvNet()
@@ -109,31 +123,42 @@ def determine_target_bboxes(img, *, threshold=0.5):
     return target_bboxes
 
 
-def store_missclassified_locations(missclassifications_dir, *, img, asset, missclassified_locations):
+def store_missclassified_locations(
+    missclassifications_dir, *, img, asset, missclassified_locations
+):
     mkdirp(missclassifications_dir)
     for missclassified_loc_i in missclassified_locations:
-        save_patch(img[missclassified_loc_i[0]:missclassified_loc_i[2], missclassified_loc_i[1]:missclassified_loc_i[3]], output_dir=missclassifications_dir, asset=asset, bbox=missclassified_loc_i)
+        save_patch(
+            img[
+                missclassified_loc_i[0] : missclassified_loc_i[2],
+                missclassified_loc_i[1] : missclassified_loc_i[3],
+            ],
+            output_dir=missclassifications_dir,
+            asset=asset,
+            bbox=missclassified_loc_i,
+        )
 
 
 def event_is_close(event, location):
-    return ((location[0] - 5 <= event.ydata and event.ydata < location[0] + 5) and
-            (location[1] - 5 <= event.xdata and event.xdata < location[1] + 5))
+    return (location[0] - 5 <= event.ydata and event.ydata < location[0] + 5) and (
+        location[1] - 5 <= event.xdata and event.xdata < location[1] + 5
+    )
 
 
 def add_grid(ax, n_rows, n_cols):
     for i in range(n_rows):
-        ax.axhline(i * MINIMAL_EDGE_LENGTH, color='0.8', lw=0.5, zorder=-1, alpha=0.5)
+        ax.axhline(i * MINIMAL_EDGE_LENGTH, color="0.8", lw=0.5, zorder=-1, alpha=0.5)
     for j in range(n_cols):
-        ax.axvline(j * MINIMAL_EDGE_LENGTH, color='0.8', lw=0.5, zorder=-1, alpha=0.5)
+        ax.axvline(j * MINIMAL_EDGE_LENGTH, color="0.8", lw=0.5, zorder=-1, alpha=0.5)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     missclassifications_dir = "../data_annotated_50px/missclassified/"
     fn_test_image = "../data/swissimage-dop10_2018_2599-1198_0.1_2056.tif"
     # fn_test_image = "../data/swissimage-dop10_2018_2600-1200_0.1_2056.tif"
     img = io.imread(fn_test_image)
-    # img = img[:1000, :1000]
+    img = img[:1000, :1000]
 
     target_bboxes = determine_target_bboxes(img, threshold=0.99)
 
@@ -141,6 +166,7 @@ if __name__ == '__main__':
     potential_location = [None, None]
     missclassified_locations = set()
     patches = {}
+
     def onclick(event):
         potential_location[0] = event.ydata
         potential_location[1] = event.xdata
@@ -152,7 +178,15 @@ if __name__ == '__main__':
             bbox = (y, x, y + MINIMAL_EDGE_LENGTH, x + MINIMAL_EDGE_LENGTH)
             if bbox not in missclassified_locations:
                 missclassified_locations.add(bbox)
-                p = ax_ref[0].add_patch(Rectangle((x, y), MINIMAL_EDGE_LENGTH, MINIMAL_EDGE_LENGTH, color='b', alpha=0.4))
+                p = ax_ref[0].add_patch(
+                    Rectangle(
+                        (x, y),
+                        MINIMAL_EDGE_LENGTH,
+                        MINIMAL_EDGE_LENGTH,
+                        color="b",
+                        alpha=0.4,
+                    )
+                )
                 patches[bbox] = p
                 event.canvas.draw_idle()
             else:
@@ -161,14 +195,27 @@ if __name__ == '__main__':
                 event.canvas.draw_idle()
 
     fig = plt.figure(figsize=(12, 12))
-    ax = fig.add_axes([0., 0., 1., 1.])
+    ax = fig.add_axes([0.0, 0.0, 1.0, 1.0])
     ax_ref[0] = ax
     ax.imshow(img, zorder=-2)
     for bbox in target_bboxes:
-        ax.add_patch(Rectangle((bbox[1], bbox[0]), MINIMAL_EDGE_LENGTH, MINIMAL_EDGE_LENGTH, edgecolor='r', fill=False))
+        ax.add_patch(
+            Rectangle(
+                (bbox[1], bbox[0]),
+                MINIMAL_EDGE_LENGTH,
+                MINIMAL_EDGE_LENGTH,
+                edgecolor="r",
+                fill=False,
+            )
+        )
     add_grid(ax, len(img) // MINIMAL_EDGE_LENGTH, len(img[0]) // MINIMAL_EDGE_LENGTH)
     fig.canvas.mpl_connect("button_press_event", onclick)
     fig.canvas.mpl_connect("button_release_event", onrelease)
     plt.show()
 
-    store_missclassified_locations(missclassifications_dir, img=img, asset=asset_from_file_name(fn_test_image), missclassified_locations=missclassified_locations)
+    store_missclassified_locations(
+        missclassifications_dir,
+        img=img,
+        asset=asset_from_file_name(fn_test_image),
+        missclassified_locations=missclassified_locations,
+    )
