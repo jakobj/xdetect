@@ -11,7 +11,7 @@ import api_wrapper
 MINIMAL_EDGE_LENGTH = 50
 
 
-def devide_into_patches(patch, *, bbox):
+def devide_into_patches(*, patch, bbox):
 
     n_rows = bbox[2] - bbox[0]
     n_cols = bbox[3] - bbox[1]
@@ -53,22 +53,23 @@ def devide_into_patches(patch, *, bbox):
     return patches, bboxes
 
 
-def save_patch(patch, *, output_dir, asset, bbox):
+def save_patch(*, patch, output_dir, asset_prefix, bbox):
     assert len(patch) == MINIMAL_EDGE_LENGTH
     plt.clf()
     plt.imshow(patch)
     fn_out = os.path.join(
-        output_dir, asset + f"-{'_'.join(str(i) for i in bbox)}.png",
+        output_dir, f"{asset_prefix}-{'_'.join(str(i) for i in bbox)}.png",
     )
     print(f"  saving example -> {fn_out}")
     plt.savefig(fn_out)
     plt.close("all")
 
 
-def determine_target_locations(patch, *, bbox, annotated_patches):
+def determine_target_locations(*, patch, bbox, annotated_patches):
     target_locations = []
 
-    keys = 'uijk'
+    keys = "uijk"
+
     def onpress(event):
         if event.key == keys[0]:
             target_locations.append((bbox[0], bbox[1]))
@@ -82,12 +83,14 @@ def determine_target_locations(patch, *, bbox, annotated_patches):
     fig = plt.figure(figsize=(12, 12))
     ax = fig.add_axes([0.0, 0.0, 1.0, 1.0])
     fig.suptitle(
-        f"please select all tiles with the target category ({'/'.join(keys)})", color="r", fontsize=20
+        f"please select all tiles with the target category ({'/'.join(keys)})",
+        color="r",
+        fontsize=20,
     )
     ax.imshow(patch, rasterized=True)
     ax.axhline(len(patch) // 2, lw=3, color="r")
     ax.axvline(len(patch[0]) // 2, lw=3, color="r")
-    draw_annotated_patches(ax, bbox=bbox, annotated_patches=annotated_patches)
+    draw_annotated_patches(ax=ax, bbox=bbox, annotated_patches=annotated_patches)
     fig.canvas.mpl_connect("key_press_event", onpress)
     plt.show()
     plt.close("all")
@@ -95,77 +98,100 @@ def determine_target_locations(patch, *, bbox, annotated_patches):
     return target_locations
 
 
-def draw_annotated_patches(ax, *, bbox, annotated_patches):
+def draw_annotated_patches(*, ax, bbox, annotated_patches):
     for annotated_patch in annotated_patches:
-        if is_loc_in_bbox(annotated_patch[:2], bbox) and is_loc_in_bbox(annotated_patch[2:], bbox):
+        if is_loc_in_bbox(loc=annotated_patch[:2], bbox=bbox) and is_loc_in_bbox(
+            loc=annotated_patch[2:], bbox=bbox
+        ):
             y = annotated_patch[0] - bbox[0]
             Dy = annotated_patch[2] - bbox[0] - y
             x = annotated_patch[1] - bbox[1]
             Dx = annotated_patch[3] - bbox[1] - x
-            ax.add_patch(Rectangle((x, y), Dx, Dy, color='red', alpha=0.4))
+            ax.add_patch(Rectangle((x, y), Dx, Dy, color="red", alpha=0.4))
 
 
-def is_loc_in_bbox(loc, bbox):
+def is_loc_in_bbox(*, loc, bbox):
     return (loc[0] >= bbox[0] and loc[0] < bbox[2]) and (
         loc[1] >= bbox[1] and loc[1] < bbox[3]
     )
 
 
-def process_patch(patch, *, output_dir, asset, bbox, annotated_patches):
+def process_patch(*, patch, output_dir, asset_prefix, bbox, annotated_patches):
 
     assert bbox[0] % MINIMAL_EDGE_LENGTH == 0
     assert bbox[1] % MINIMAL_EDGE_LENGTH == 0
 
     if len(patch) <= MINIMAL_EDGE_LENGTH:
-        save_patch(patch, output_dir=os.path.join(output_dir, 'positive'), asset=asset, bbox=bbox)
+        save_patch(
+            patch=patch,
+            output_dir=os.path.join(output_dir, "positive"),
+            asset_prefix=asset_prefix,
+            bbox=bbox,
+        )
         return
 
-    target_locations = determine_target_locations(patch, bbox=bbox, annotated_patches=annotated_patches)
+    target_locations = determine_target_locations(
+        patch=patch, bbox=bbox, annotated_patches=annotated_patches
+    )
 
-    patches, bboxes = devide_into_patches(patch, bbox=bbox)
+    patches, bboxes = devide_into_patches(patch=patch, bbox=bbox)
     for patch_i, bbox_i in zip(patches, bboxes):
         for target_loc_i in target_locations:
-            if is_loc_in_bbox(target_loc_i, bbox_i):
+            if is_loc_in_bbox(loc=target_loc_i, bbox=bbox_i):
                 process_patch(
-                    patch_i,
+                    patch=patch_i,
                     output_dir=output_dir,
-                    asset=asset,
+                    asset_prefix=asset_prefix,
                     bbox=bbox_i,
-                    annotated_patches=annotated_patches
+                    annotated_patches=annotated_patches,
                 )
                 break  # since this patch has been processed we can
                 # move on to next patch even if multiple target
                 # locations were indicated for this patch
 
 
-def asset_from_file_name(fn):
-    return re.search("\/(swissimage.*)\.tif", fn)[1]
+def identifier_from_asset(asset):
+    return re.search("(swissimage.*)_0.1_.*\.tif", asset)[1]
 
 
-def generate_positive_examples_from_assets(asset_dir, examples_dir):
+def identifier_from_filename(fn):
+    return identifier_from_asset(os.path.basename(fn))
+
+
+def asset_prefix_from_asset(asset):
+    return os.path.splitext(asset)[0]
+
+
+def asset_prefix_from_filename(fn):
+    return asset_prefix_from_asset(os.path.basename(fn))
+
+
+def generate_positive_examples_from_assets(*, asset_dir, examples_dir):
 
     mkdirp(examples_dir)
-    mkdirp(os.path.join(examples_dir, 'positive'))
+    mkdirp(os.path.join(examples_dir, "positive"))
 
     for fn in glob.glob(os.path.join(asset_dir, "*_0.1_*.tif")):
-        asset = asset_from_file_name(fn)
-        annotated_patches = determine_annotated_patches(examples_dir, asset=asset)
+        asset_prefix = asset_prefix_from_filename(fn)
+        annotated_patches = determine_annotated_patches(
+            examples_dir=examples_dir, asset_prefix=asset_prefix
+        )
         if len(annotated_patches) > 0:
-            print(f"  {fn} has already been annotated")
+            print(f"  asset '{os.path.basename(fn)}' has already been annotated")
             inp = ""
-            while inp not in ('y', 'n'):
+            while inp not in ("y", "n"):
                 inp = input("  reannotate asset? (y/n) ")
             if inp == "y":
                 pass
             elif inp == "n":
                 continue
 
-        print(f"  annotating {fn}")
+        print(f"  annotating asset '{os.path.basename(fn)}'")
         img = io.imread(fn)
         process_patch(
-            img,
+            patch=img,
             output_dir=examples_dir,
-            asset=asset,
+            asset_prefix=asset_prefix,
             bbox=(0, 0, 10_000, 10_000),
             annotated_patches=annotated_patches,
         )
@@ -175,10 +201,18 @@ def mkdirp(directory):
     os.makedirs(directory, exist_ok=True)
 
 
-def determine_annotated_patches(examples_dir, *, asset):
+def determine_annotated_patches(*, examples_dir, asset_prefix):
     annotated_patches = []
-    rgx = re.compile(os.path.join(examples_dir, 'positive', f"{asset}-([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+).png"))
-    for fn in sorted(glob.glob(os.path.join(examples_dir, 'positive', f"{asset}*.png"))):
+    rgx = re.compile(
+        os.path.join(
+            examples_dir,
+            "positive",
+            f"{asset_prefix}-([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+).png",
+        )
+    )
+    for fn in sorted(
+        glob.glob(os.path.join(examples_dir, "positive", f"{asset_prefix}*.png"))
+    ):
         match = rgx.search(fn)
         y, x, yDy, xDx = int(match[1]), int(match[2]), int(match[3]), int(match[4])
         annotated_patches.append([y, x, yDy, xDx])
@@ -193,4 +227,6 @@ if __name__ == "__main__":
     # bbox notation (E, N, E + DE, N + DN)
     bbox = (7.42390, 46.93353, 7.45145, 46.95342)
     api_wrapper.get_assets_from_bbox(bbox=bbox, output_dir=asset_dir)
-    generate_positive_examples_from_assets(asset_dir, examples_dir)
+    generate_positive_examples_from_assets(
+        asset_dir=asset_dir, examples_dir=examples_dir
+    )
