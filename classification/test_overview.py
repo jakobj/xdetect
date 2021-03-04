@@ -62,8 +62,8 @@ if __name__ == "__main__":
     # asset = "swissimage-dop10_2018_2598-1199_0.1_2056.tif"
     # asset = "swissimage-dop10_2018_2598-1200_0.1_2056.tif"
     # asset = "swissimage-dop10_2018_2599-1198_0.1_2056.tif"
-    asset = "swissimage-dop10_2018_2599-1199_0.1_2056.tif"
-    # asset = "swissimage-dop10_2018_2600-1200_0.1_2056.tif"
+    # asset = "swissimage-dop10_2018_2599-1199_0.1_2056.tif"
+    asset = "swissimage-dop10_2018_2600-1200_0.1_2056.tif"
 
     img = io.imread(os.path.join(asset_dir, asset))
     # img = img[:1000, :1000]

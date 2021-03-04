@@ -27,19 +27,18 @@ def compute_midpoint(bbox):
 def compute_coordinates_from_bbox(*, bbox, n_img_rows, n_img_cols, coordinates_bbox):
     def convert_y(y):
         return np.round(coordinates_bbox[3] + slope_rows * y, 7)
+
     def convert_x(x):
         return np.round(coordinates_bbox[0] + slope_cols * x, 7)
 
-    n_img_rows = 10_000
-    n_img_cols = 10_000
     slope_rows = (coordinates_bbox[1] - coordinates_bbox[3]) / n_img_rows
     slope_cols = (coordinates_bbox[2] - coordinates_bbox[0]) / n_img_cols
     return (convert_y(bbox[0]), convert_x(bbox[1]), convert_y(bbox[2]), convert_x(bbox[3]))
 
 
 def create_polygon_from_coordinates(coordinates):
-    # return (coordinates[0], coordinates[1]), (coordinates[0], coordinates[3]), (coordinates[1], coordinates[3]), (coordinates[1], coordinates[1]), (coordinates[0], coordinates[1])
-    return (coordinates[1], coordinates[0]), (coordinates[3], coordinates[0]), (coordinates[3], coordinates[2]), (coordinates[1], coordinates[2]), (coordinates[1], coordinates[0])
+    # return (coordinates[0], coordinates[1]), (coordinates[0], coordinates[3]), (coordinates[2], coordinates[3]), (coordinates[2], coordinates[1]), (coordinates[0], coordinates[1])
+    return (coordinates[1], coordinates[0]), (coordinates[3], coordinates[0]), (coordinates[3], coordinates[2]), (coordinates[1], coordinates[2]), (coordinates[1], coordinates[2])
 
 
 if __name__ == '__main__':
@@ -59,7 +58,6 @@ if __name__ == '__main__':
     for asset in assets:
         print(f"  processing asset '{asset}'")
         img = io.imread(os.path.join(asset_dir, asset))
-        img = img[:3000, :3000]
 
         identifier = identifier_from_asset(asset)
         metadata = load_metadata(asset_dir=asset_dir, identifier=identifier)
@@ -80,4 +78,3 @@ if __name__ == '__main__':
         fn = os.path.join(export_dir, f'ROIs-{asset_prefix}.geojson')
         gdf.to_file(fn, driver='GeoJSON')
         print(f"    -> exported to {fn}")
-        exit()

@@ -16,7 +16,7 @@ sys.path.insert(0, "../annotation/")
 from annotate import identifier_from_asset
 
 
-THRESHOLD = 0.999
+THRESHOLD = 0.9999
 
 
 def compute_precision_and_recall(*, n_rows, n_cols, bboxes_ground_truth, bboxes):
