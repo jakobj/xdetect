@@ -117,7 +117,7 @@ if __name__ == "__main__":
                 torchvision.transforms.RandomVerticalFlip(),
                 torchvision.transforms.RandomResizedCrop(
                     (MINIMAL_EDGE_LENGTH, MINIMAL_EDGE_LENGTH),
-                    scale=(0.95, 1.0),
+                    scale=(0.98, 1.0),
                     ratio=(1.0, 1.0),
                 ),
                 torchvision.transforms.Lambda(normalize),
@@ -128,4 +128,4 @@ if __name__ == "__main__":
     t0 = time.time()
     model = train(params=params, model=model, dataset=dataset)
     print(f'training took {time.time() - t0:.02f}s')
-    torch.save(model.state_dict(), f"./first_model.torch")
+    torch.save(model.state_dict(), f"./model.torch")
