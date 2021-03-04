@@ -168,10 +168,9 @@ def draw_bboxes(*, ax, bboxes, edgecolor):
 if __name__ == "__main__":
 
     missclassifications_dir = "../data_annotated_50px/missclassified/"
-    fn_test_image = "../data/swissimage-dop10_2018_2599-1198_0.1_2056.tif"
-    # fn_test_image = "../data/swissimage-dop10_2018_2600-1200_0.1_2056.tif"
+    # fn_test_image = "../data/swissimage-dop10_2018_2599-1198_0.1_2056.tif"
+    fn_test_image = "../data/swissimage-dop10_2018_2600-1200_0.1_2056.tif"
     img = io.imread(fn_test_image)
-    img = img[:1000, :1000]
 
     target_bboxes = determine_target_bboxes(img=img, threshold=0.9999)
 
