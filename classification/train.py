@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import time
 import torch
 from torch.utils.data import DataLoader
 import torchvision
@@ -124,5 +125,7 @@ if __name__ == "__main__":
         ),
     )
 
+    t0 = time.time()
     model = train(params=params, model=model, dataset=dataset)
+    print(f'training took {time.time() - t0:.02f}s')
     torch.save(model.state_dict(), f"./first_model.torch")
