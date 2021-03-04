@@ -14,7 +14,7 @@ from train import normalize
 from train import MINIMAL_EDGE_LENGTH
 
 sys.path.insert(0, "../annotation/")
-from annotate import asset_from_file_name, mkdirp, save_patch
+from annotate import asset_prefix_from_filename, mkdirp, save_patch
 
 
 class SegmentedImage(torch.utils.data.Dataset):
@@ -91,7 +91,7 @@ class SegmentedImage(torch.utils.data.Dataset):
         return img
 
 
-def determine_target_bboxes(img, *, threshold=0.5):
+def determine_target_bboxes(*, img, threshold=0.5):
 
     dataset = SegmentedImage(
         img,
@@ -124,28 +124,28 @@ def determine_target_bboxes(img, *, threshold=0.5):
 
 
 def store_missclassified_locations(
-    missclassifications_dir, *, img, asset, missclassified_locations
+    *, missclassifications_dir, img, asset_prefix, missclassified_locations
 ):
     mkdirp(missclassifications_dir)
     for missclassified_loc_i in missclassified_locations:
         save_patch(
-            img[
+            patch=img[
                 missclassified_loc_i[0] : missclassified_loc_i[2],
                 missclassified_loc_i[1] : missclassified_loc_i[3],
             ],
             output_dir=missclassifications_dir,
-            asset=asset,
+            asset_prefix=asset_prefix,
             bbox=missclassified_loc_i,
         )
 
 
-def event_is_close(event, location):
+def event_is_close(*, event, location):
     return (location[0] - 5 <= event.ydata and event.ydata < location[0] + 5) and (
         location[1] - 5 <= event.xdata and event.xdata < location[1] + 5
     )
 
 
-def add_grid(ax, n_rows, n_cols):
+def add_grid(*, ax, n_rows, n_cols):
     for i in range(n_rows):
         ax.axhline(i * MINIMAL_EDGE_LENGTH, color="0.8", lw=0.5, zorder=-1, alpha=0.5)
     for j in range(n_cols):
@@ -173,7 +173,7 @@ if __name__ == "__main__":
     img = io.imread(fn_test_image)
     img = img[:1000, :1000]
 
-    target_bboxes = determine_target_bboxes(img, threshold=0.99)
+    target_bboxes = determine_target_bboxes(img=img, threshold=0.9999)
 
     ax_ref = [None]
     potential_location = [None, None]
@@ -185,7 +185,7 @@ if __name__ == "__main__":
         potential_location[1] = event.xdata
 
     def onrelease(event):
-        if event_is_close(event, potential_location):
+        if event_is_close(event=event, location=potential_location):
             y = int(event.ydata // MINIMAL_EDGE_LENGTH) * MINIMAL_EDGE_LENGTH
             x = int(event.xdata // MINIMAL_EDGE_LENGTH) * MINIMAL_EDGE_LENGTH
             bbox = (y, x, y + MINIMAL_EDGE_LENGTH, x + MINIMAL_EDGE_LENGTH)
@@ -211,15 +211,19 @@ if __name__ == "__main__":
     ax = fig.add_axes([0.0, 0.0, 1.0, 1.0])
     ax_ref[0] = ax
     ax.imshow(img, zorder=-2)
-    draw_bboxes(ax=ax, bboxes=target_bboxes, edgecolor='b')
-    add_grid(ax, len(img) // MINIMAL_EDGE_LENGTH, len(img[0]) // MINIMAL_EDGE_LENGTH)
+    draw_bboxes(ax=ax, bboxes=target_bboxes, edgecolor="b")
+    add_grid(
+        ax=ax,
+        n_rows=len(img) // MINIMAL_EDGE_LENGTH,
+        n_cols=len(img[0]) // MINIMAL_EDGE_LENGTH,
+    )
     fig.canvas.mpl_connect("button_press_event", onclick)
     fig.canvas.mpl_connect("button_release_event", onrelease)
     plt.show()
 
     store_missclassified_locations(
-        missclassifications_dir,
+        missclassifications_dir=missclassifications_dir,
         img=img,
-        asset=asset_from_file_name(fn_test_image),
+        asset_prefix=asset_prefix_from_filename(fn_test_image),
         missclassified_locations=missclassified_locations,
     )
