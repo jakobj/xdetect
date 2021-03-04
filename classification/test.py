@@ -37,16 +37,21 @@ class SegmentedImage(torch.utils.data.Dataset):
 
         patches = np.empty((n_rows, n_cols, MINIMAL_EDGE_LENGTH, MINIMAL_EDGE_LENGTH, 3), dtype=np.float32)
         for i in range(n_rows):
-            rows = slice(i * self.effective_edge_width, i * self.effective_edge_width + MINIMAL_EDGE_LENGTH)
-            if rows.stop > len(img):
-                rows = slice(len(img) - MINIMAL_EDGE_LENGTH, len(img))
             for j in range(n_cols):
-                cols = slice(j * self.effective_edge_width, j * self.effective_edge_width + MINIMAL_EDGE_LENGTH)
-                if cols.stop > len(img[i]):
-                    cols = slice(len(img[i]) - MINIMAL_EDGE_LENGTH, len(img[i]))
-                patches[i, j] = img[rows, cols] / 255.
-
+                patches[i, j] = img[self.get_rows(i, len(img)), self.get_cols(j, len(img[i]))] / 255.
         return patches
+
+    def get_rows(self, i, n_img_rows):
+        rows = slice(i * self.effective_edge_width, i * self.effective_edge_width + MINIMAL_EDGE_LENGTH)
+        if rows.stop > n_img_rows:
+            rows = slice(n_img_rows - MINIMAL_EDGE_LENGTH, n_img_rows)
+        return rows
+
+    def get_cols(self, j, n_img_cols):
+        cols = slice(j * self.effective_edge_width, j * self.effective_edge_width + MINIMAL_EDGE_LENGTH)
+        if cols.stop > n_img_cols:
+            cols = slice(n_img_cols - MINIMAL_EDGE_LENGTH, n_img_cols)
+        return cols
 
     @property
     def effective_edge_width(self):
@@ -77,7 +82,7 @@ class SegmentedImage(torch.utils.data.Dataset):
         return img
 
 
-def create_heatmap(img, *, threshold=0.5):
+def determine_target_bboxes(img, *, threshold=0.5):
 
     dataset = SegmentedImage(img, transform=torchvision.transforms.Compose([
         torchvision.transforms.ToTensor(),
@@ -88,18 +93,20 @@ def create_heatmap(img, *, threshold=0.5):
     model = ConvNet()
     model.load_state_dict(torch.load("./first_model.torch"))
 
-    heatmap = np.zeros((img.shape[0], img.shape[1]))
+    target_bboxes = []
     with torch.no_grad():
         for i, x in enumerate(data_loader):
 
             outputs = model(x.detach())
             probs = torch.nn.functional.softmax(outputs, dim=1)
 
+            rows = dataset.get_rows(i, len(img))
             for j in range(dataset.n_cols):
-                heatmap[i * dataset.effective_edge_width:i * dataset.effective_edge_width + MINIMAL_EDGE_LENGTH,
-                        j * dataset.effective_edge_width:j * dataset.effective_edge_width + MINIMAL_EDGE_LENGTH] = (probs[j, 1] > threshold)
+                if probs[j, 1] > threshold:
+                    cols = dataset.get_cols(j, len(img[0]))
+                    target_bboxes.append((rows.start, cols.start, rows.stop, cols.stop))
 
-    return heatmap
+    return target_bboxes
 
 
 def store_missclassified_locations(missclassifications_dir, *, img, asset, missclassified_locations):
@@ -116,8 +123,7 @@ if __name__ == '__main__':
     img = io.imread(fn_test_image)
     # img = img[:1000, :1000]
 
-    heatmap = create_heatmap(img, threshold=0.99)
-    assert img.shape[:2] == heatmap.shape
+    target_bboxes = determine_target_bboxes(img, threshold=0.99)
 
     ax_ref = [None]
     missclassified_locations = []
@@ -132,7 +138,8 @@ if __name__ == '__main__':
     ax = fig.add_axes([0., 0., 1., 1.])
     ax_ref[0] = ax
     ax.imshow(img)
-    ax.imshow(heatmap, alpha=0.4, cmap='Reds', vmin=0, vmax=1)
+    for bbox in target_bboxes:
+        ax.add_patch(Rectangle((bbox[1], bbox[0]), MINIMAL_EDGE_LENGTH, MINIMAL_EDGE_LENGTH, edgecolor='r', fill=False))
     # plt.savefig('test.png', dpi=1200)
     fig.canvas.mpl_connect("button_press_event", onclick)
     plt.show()
