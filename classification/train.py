@@ -96,8 +96,8 @@ if __name__ == "__main__":
     params = {
         "seed": 123,
         "batch_size": 64,
-        "lr": 0.5e-4,
-        "n_epochs": 4 * 128,
+        "lr": 0.25e-4,
+        "n_epochs": 8 * 128,
     }
 
     asset_dir = "../data/"

@@ -43,7 +43,7 @@ def determine_target_bboxes(*, img, threshold=0.5):
     data_loader = DataLoader(dataset, batch_size=dataset.n_cols, shuffle=False)
 
     model = ConvNet()
-    model.load_state_dict(torch.load("./first_model.torch"))
+    model.load_state_dict(torch.load("./model.torch"))
 
     target_bboxes = []
     with torch.no_grad():
@@ -59,5 +59,3 @@ def determine_target_bboxes(*, img, threshold=0.5):
                     target_bboxes.append((rows.start, cols.start, rows.stop, cols.stop))
 
     return target_bboxes
-
-

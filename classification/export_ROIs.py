@@ -15,9 +15,6 @@ sys.path.insert(0, "../annotation/")
 from annotate import identifier_from_asset, asset_prefix_from_asset
 
 
-gpd.io.file.fiona.drvsupport.supported_drivers['KML'] = 'rw'
-
-
 def load_metadata(*, asset_dir, identifier):
     with open(os.path.join(asset_dir, f"{identifier}.json"), 'r') as f:
         return json.load(f)
@@ -79,8 +76,8 @@ if __name__ == '__main__':
 
         asset_prefix = asset_prefix_from_asset(asset)
         gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(polygons))
-        gdf = gdf.set_crs("EPSG:4326")
-        fn = os.path.join(export_dir, f'ROIs-{asset_prefix}.kml')
-        gdf.to_file(fn, driver='KML')
+        gdf = gdf.set_crs("epsg:4326")
+        fn = os.path.join(export_dir, f'ROIs-{asset_prefix}.geojson')
+        gdf.to_file(fn, driver='GeoJSON')
         print(f"    -> exported to {fn}")
         exit()
