@@ -1,141 +1,30 @@
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
-import numpy as np
+import os
 from skimage import io
-import torch
-from torch.utils.data import DataLoader
-import torchvision
 import sys
 
-from classifier import ConvNet
-from train import normalize
-
-
 from train import MINIMAL_EDGE_LENGTH
+from test_precision_recall import THRESHOLD
+import lib_classification
 
 sys.path.insert(0, "../annotation/")
-from annotate import asset_prefix_from_filename, mkdirp, save_patch
+from annotate import asset_prefix_from_asset, identifier_from_asset, mkdirp, save_patch
 
 
-class SegmentedImage(torch.utils.data.Dataset):
-    def __init__(self, img, transform=None):
-
-        self.patches = self.segment_image(img)
-        self.transform = transform
-
-    def segment_image(self, img):
-
-        assert img.shape[0] % MINIMAL_EDGE_LENGTH == 0
-        assert img.shape[1] % MINIMAL_EDGE_LENGTH == 0
-        assert img.shape[0] == img.shape[1]
-
-        n_rows = int(img.shape[0] // self.effective_edge_width)
-        n_cols = n_rows
-
-        patches = np.empty(
-            (n_rows, n_cols, MINIMAL_EDGE_LENGTH, MINIMAL_EDGE_LENGTH, 3),
-            dtype=np.float32,
-        )
-        for i in range(n_rows):
-            for j in range(n_cols):
-                patches[i, j] = (
-                    img[self.get_rows(i, len(img)), self.get_cols(j, len(img[i]))]
-                    / 255.0
-                )
-        return patches
-
-    def get_rows(self, i, n_img_rows):
-        rows = slice(
-            i * self.effective_edge_width,
-            i * self.effective_edge_width + MINIMAL_EDGE_LENGTH,
-        )
-        if rows.stop > n_img_rows:
-            rows = slice(n_img_rows - MINIMAL_EDGE_LENGTH, n_img_rows)
-        return rows
-
-    def get_cols(self, j, n_img_cols):
-        cols = slice(
-            j * self.effective_edge_width,
-            j * self.effective_edge_width + MINIMAL_EDGE_LENGTH,
-        )
-        if cols.stop > n_img_cols:
-            cols = slice(n_img_cols - MINIMAL_EDGE_LENGTH, n_img_cols)
-        return cols
-
-    @property
-    def effective_edge_width(self):
-        stride_ratio = 0.66  # see http://hw.oeaw.ac.at/0xc1aa500e%200x00373589.pdf
-        return int(stride_ratio * MINIMAL_EDGE_LENGTH)
-
-    @property
-    def n_rows(self):
-        return len(self.patches)
-
-    @property
-    def n_cols(self):
-        return len(self.patches[0])
-
-    def __len__(self):
-        return self.n_rows * self.n_cols
-
-    def __getitem__(self, idx):
-
-        row = idx // self.n_rows
-        col = idx % self.n_rows
-
-        img = self.patches[row, col].copy()
-
-        if self.transform is not None:
-            return self.transform(img)
-
-        return img
-
-
-def determine_target_bboxes(*, img, threshold=0.5):
-
-    dataset = SegmentedImage(
-        img,
-        transform=torchvision.transforms.Compose(
-            [
-                torchvision.transforms.ToTensor(),
-                torchvision.transforms.Lambda(normalize),
-            ]
-        ),
-    )
-    data_loader = DataLoader(dataset, batch_size=dataset.n_cols, shuffle=False)
-
-    model = ConvNet()
-    model.load_state_dict(torch.load("./first_model.torch"))
-
-    target_bboxes = []
-    with torch.no_grad():
-        for i, x in enumerate(data_loader):
-
-            outputs = model(x.detach())
-            probs = torch.nn.functional.softmax(outputs, dim=1)
-
-            rows = dataset.get_rows(i, len(img))
-            for j in range(dataset.n_cols):
-                if probs[j, 1] > threshold:
-                    cols = dataset.get_cols(j, len(img[0]))
-                    target_bboxes.append((rows.start, cols.start, rows.stop, cols.stop))
-
-    return target_bboxes
-
-
-def store_missclassified_locations(
-    *, missclassifications_dir, img, asset_prefix, missclassified_locations
+def store_locations(
+    *, examples_dir, img, asset_prefix, locations
 ):
-    mkdirp(missclassifications_dir)
-    for missclassified_loc_i in missclassified_locations:
+    mkdirp(examples_dir)
+    for loc in locations:
         save_patch(
             patch=img[
-                missclassified_loc_i[0] : missclassified_loc_i[2],
-                missclassified_loc_i[1] : missclassified_loc_i[3],
+                loc[0] : loc[2],
+                loc[1] : loc[3],
             ],
-            output_dir=missclassifications_dir,
+            output_dir=examples_dir,
             asset_prefix=asset_prefix,
-            bbox=missclassified_loc_i,
+            bbox=loc,
         )
 
 
@@ -167,15 +56,28 @@ def draw_bboxes(*, ax, bboxes, edgecolor):
 
 if __name__ == "__main__":
 
-    missclassifications_dir = "../data_annotated_50px/missclassified/"
-    # fn_test_image = "../data/swissimage-dop10_2018_2599-1198_0.1_2056.tif"
-    fn_test_image = "../data/swissimage-dop10_2018_2600-1200_0.1_2056.tif"
-    img = io.imread(fn_test_image)
+    asset_dir = "../data/"
+    examples_dir = "../data_annotated_50px/"
+    # asset = "swissimage-dop10_2018_2598-1198_0.1_2056.tif"
+    # asset = "swissimage-dop10_2018_2598-1199_0.1_2056.tif"
+    # asset = "swissimage-dop10_2018_2598-1200_0.1_2056.tif"
+    # asset = "swissimage-dop10_2018_2599-1198_0.1_2056.tif"
+    asset = "swissimage-dop10_2018_2599-1199_0.1_2056.tif"
+    # asset = "swissimage-dop10_2018_2600-1200_0.1_2056.tif"
 
-    target_bboxes = determine_target_bboxes(img=img, threshold=0.9999)
+    img = io.imread(os.path.join(asset_dir, asset))
+    # img = img[:1000, :1000]
+
+    target_bboxes_ground_truth = lib_classification.determine_target_bboxes_ground_truth(
+        asset_dir=asset_dir,
+        examples_dir=examples_dir,
+        identifier=identifier_from_asset(asset),
+    )
+    target_bboxes = lib_classification.determine_target_bboxes(img=img, threshold=THRESHOLD)
 
     ax_ref = [None]
     potential_location = [None, None]
+    missed_locations = set()
     missclassified_locations = set()
     patches = {}
 
@@ -188,21 +90,30 @@ if __name__ == "__main__":
             y = int(event.ydata // MINIMAL_EDGE_LENGTH) * MINIMAL_EDGE_LENGTH
             x = int(event.xdata // MINIMAL_EDGE_LENGTH) * MINIMAL_EDGE_LENGTH
             bbox = (y, x, y + MINIMAL_EDGE_LENGTH, x + MINIMAL_EDGE_LENGTH)
-            if bbox not in missclassified_locations:
-                missclassified_locations.add(bbox)
+            if (bbox not in missclassified_locations) and (bbox not in missed_locations):
+                if event.button == 1:
+                    missed_locations.add(bbox)
+                    color = 'b'
+                elif event.button == 3:
+                    missclassified_locations.add(bbox)
+                    color = 'r'
+
                 p = ax_ref[0].add_patch(
                     Rectangle(
                         (x, y),
                         MINIMAL_EDGE_LENGTH,
                         MINIMAL_EDGE_LENGTH,
-                        color="b",
+                        color=color,
                         alpha=0.4,
                     )
                 )
                 patches[bbox] = p
                 event.canvas.draw_idle()
             else:
-                missclassified_locations.remove(bbox)
+                if event.button == 1:
+                    missed_locations.remove(bbox)
+                elif event.button == 3:
+                    missclassified_locations.remove(bbox)
                 patches[bbox].remove()
                 event.canvas.draw_idle()
 
@@ -210,7 +121,8 @@ if __name__ == "__main__":
     ax = fig.add_axes([0.0, 0.0, 1.0, 1.0])
     ax_ref[0] = ax
     ax.imshow(img, zorder=-2)
-    draw_bboxes(ax=ax, bboxes=target_bboxes, edgecolor="b")
+    draw_bboxes(ax=ax, bboxes=target_bboxes_ground_truth, edgecolor="b")
+    draw_bboxes(ax=ax, bboxes=target_bboxes, edgecolor="r")
     add_grid(
         ax=ax,
         n_rows=len(img) // MINIMAL_EDGE_LENGTH,
@@ -220,9 +132,15 @@ if __name__ == "__main__":
     fig.canvas.mpl_connect("button_release_event", onrelease)
     plt.show()
 
-    store_missclassified_locations(
-        missclassifications_dir=missclassifications_dir,
+    store_locations(
+        examples_dir=os.path.join(examples_dir, 'positive'),
         img=img,
-        asset_prefix=asset_prefix_from_filename(fn_test_image),
-        missclassified_locations=missclassified_locations,
+        asset_prefix=asset_prefix_from_asset(asset),
+        locations=missed_locations,
+    )
+    store_locations(
+        examples_dir=os.path.join(examples_dir, 'missclassified'),
+        img=img,
+        asset_prefix=asset_prefix_from_asset(asset),
+        locations=missclassified_locations,
     )
