@@ -166,6 +166,10 @@ def asset_prefix_from_filename(fn):
     return asset_prefix_from_asset(os.path.basename(fn))
 
 
+def asset_from_filename(fn):
+    return os.path.basename(fn)
+
+
 def generate_positive_examples_from_assets(*, asset_dir, examples_dir):
 
     mkdirp(examples_dir)
