@@ -1,9 +1,9 @@
-import csv
 import json
+import glob
 import numpy as np
 import os
-# import pandas as pd
 import geopandas as gpd
+import re
 import shapely.geometry
 from skimage import io
 import sys
@@ -12,7 +12,7 @@ from test_precision_recall import THRESHOLD
 import lib_classification
 
 sys.path.insert(0, "../annotation/")
-from annotate import identifier_from_asset, asset_prefix_from_asset
+from annotate import identifier_from_asset, asset_prefix_from_asset, asset_from_filename
 
 
 def load_metadata(*, asset_dir, identifier):
@@ -41,21 +41,35 @@ def create_polygon_from_coordinates(coordinates):
     return (coordinates[1], coordinates[0]), (coordinates[3], coordinates[0]), (coordinates[3], coordinates[2]), (coordinates[1], coordinates[2]), (coordinates[1], coordinates[2])
 
 
+def determine_exported_assets(export_dir):
+    exported_assets = set()
+    rgx = re.compile(".*/ROIs-(swissimage.*).geojson")
+    for fn in glob.glob(os.path.join(export_dir, "ROIs*.geojson")):
+        match = rgx.search(fn)
+        exported_assets.add(f"{match[1]}.tif")
+    return exported_assets
+
+
 if __name__ == '__main__':
 
     asset_dir = "../data/"
-    assets = ["swissimage-dop10_2018_2598-1198_0.1_2056.tif",
-              "swissimage-dop10_2018_2598-1199_0.1_2056.tif",
-              "swissimage-dop10_2018_2598-1200_0.1_2056.tif",
-              "swissimage-dop10_2018_2599-1198_0.1_2056.tif",
-              "swissimage-dop10_2018_2599-1199_0.1_2056.tif",
-              "swissimage-dop10_2018_2599-1200_0.1_2056.tif",
-              "swissimage-dop10_2018_2600-1198_0.1_2056.tif",
-              "swissimage-dop10_2018_2600-1199_0.1_2056.tif",
-              "swissimage-dop10_2018_2600-1200_0.1_2056.tif"]
     export_dir = "../data_exported/"
 
-    for asset in assets:
+    exported_assets = determine_exported_assets(export_dir)
+
+    for fn in glob.glob(os.path.join(asset_dir, "swissimage*.tif")):
+        asset = asset_from_filename(fn)
+
+        if asset in sorted(exported_assets):
+            # inp = ''
+            # while inp not in ('y', 'n'):
+            #     inp = input(f"  asset '{asset}' already exported - reexport? (y/n)")
+            # if inp == 'n':
+            #     print(f"  skipping '{asset}'")
+            #     continue
+            print(f"  skipping '{asset}'")
+            continue
+
         print(f"  processing asset '{asset}'")
         img = io.imread(os.path.join(asset_dir, asset))
 
@@ -72,9 +86,10 @@ if __name__ == '__main__':
         for coords in coordinates:
             polygons.append(shapely.geometry.Polygon(create_polygon_from_coordinates(coords)))
 
-        asset_prefix = asset_prefix_from_asset(asset)
-        gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(polygons))
-        gdf = gdf.set_crs("epsg:4326")
-        fn = os.path.join(export_dir, f'ROIs-{asset_prefix}.geojson')
-        gdf.to_file(fn, driver='GeoJSON')
-        print(f"    -> exported to {fn}")
+        if len(polygons) > 0:
+            asset_prefix = asset_prefix_from_asset(asset)
+            gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(polygons))
+            gdf = gdf.set_crs("epsg:4326")
+            fn = os.path.join(export_dir, f'ROIs-{asset_prefix}.geojson')
+            gdf.to_file(fn, driver='GeoJSON')
+            print(f"    -> exported to {fn}")
