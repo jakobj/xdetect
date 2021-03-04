@@ -3,28 +3,41 @@ import numpy as np
 import os
 from skimage import io
 
-from annotate import MINIMAL_EDGE_LENGTH, asset_from_file_name, save_patch, mkdirp
+from annotate import (
+    MINIMAL_EDGE_LENGTH,
+    asset_from_filename,
+    asset_prefix_from_asset,
+    save_patch,
+    mkdirp,
+)
 
 
 REL_NUMBER_NEGATIVE_EXAMPLES = 2
 
 
-def count_examples(examples_dir, *, asset):
-    return len(glob.glob(os.path.join(examples_dir, f"{asset}*.png")))
+def count_examples(*, examples_dir, asset_prefix):
+    return len(glob.glob(os.path.join(examples_dir, f"{asset_prefix}*.png")))
 
 
-def generate_negative_examples(asset_dir, examples_dir):
+def generate_negative_examples(*, asset_dir, examples_dir):
 
-    mkdirp(os.path.join(examples_dir, 'negative'))
+    mkdirp(os.path.join(examples_dir, "negative"))
 
     for fn in glob.glob(os.path.join(asset_dir, "*_0.1_*.tif")):
 
-        asset = asset_from_file_name(fn)
-        n_positive_examples = count_examples(os.path.join(examples_dir, 'positive'), asset=asset)
+        asset = asset_from_filename(fn)
+        asset_prefix = asset_prefix_from_asset(asset)
+        n_positive_examples = count_examples(
+            examples_dir=os.path.join(examples_dir, "positive"),
+            asset_prefix=asset_prefix,
+        )
         if n_positive_examples == 0:
             continue
 
-        n_negative_examples = count_examples(os.path.join(examples_dir, 'negative'), asset=asset)
+        n_negative_examples = count_examples(
+            examples_dir=os.path.join(examples_dir, "negative"),
+            asset_prefix=asset_prefix,
+        )
         if n_negative_examples > REL_NUMBER_NEGATIVE_EXAMPLES * n_positive_examples:
             raise RuntimeError(
                 f"too many negative examples for asset '{asset}' - remove a few"
@@ -52,9 +65,9 @@ def generate_negative_examples(asset_dir, examples_dir):
             patch = img[bbox[0] : bbox[2], bbox[1] : bbox[3]]
 
             save_patch(
-                patch,
+                patch=patch,
                 output_dir=os.path.join(examples_dir, "negative"),
-                asset=asset,
+                asset_prefix=asset_prefix,
                 bbox=bbox,
             )
 
@@ -65,4 +78,4 @@ if __name__ == "__main__":
     asset_dir = "../data/"
     examples_dir = f"../data_annotated_{MINIMAL_EDGE_LENGTH}px/"
 
-    generate_negative_examples(asset_dir, examples_dir)
+    generate_negative_examples(asset_dir=asset_dir, examples_dir=examples_dir)
