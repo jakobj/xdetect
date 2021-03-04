@@ -6,14 +6,30 @@ import re
 URL = "https://data.geo.admin.ch/api/stac/v0.9/collections/ch.swisstopo.swissimage-dop10/items?bbox={bbox}"
 
 
+def get_json(url):
+    r = requests.get(url)
+    if r.status_code != 200:
+        raise RuntimeError(r.text)
+    return r.json()
+
+
 def get_features_from_bbox(bbox):
     """Return all features for bounding box"""
 
-    r = requests.get(URL.format(bbox=",".join(str(f) for f in bbox)))
-    if r.status_code != 200:
-        raise RuntimeError(r.text)
+    url = URL.format(bbox=",".join(str(f) for f in bbox))
+    features = []
+    while True:
+        r_json = get_json(url)
+        features += r_json["features"]
+        more_features = False
+        for link in r_json['links']:
+            if link['rel'] == 'next':
+                url = link['href']
+                more_features = True
 
-    features = r.json()["features"]
+        if not more_features:
+            break
+
     print(f"  found {len(features)} features for bounding box {bbox}")
     return features
 
