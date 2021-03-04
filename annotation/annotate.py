@@ -192,5 +192,5 @@ if __name__ == "__main__":
 
     # bbox notation (E, N, E + DE, N + DN)
     bbox = (7.42390, 46.93353, 7.45145, 46.95342)
-    api_wrapper.get_assets_from_bbox(bbox, output_dir=asset_dir)
+    api_wrapper.get_assets_from_bbox(bbox=bbox, output_dir=asset_dir)
     generate_positive_examples_from_assets(asset_dir, examples_dir)
