@@ -16,12 +16,12 @@ Automatically detect all pedestrian crossings in aerial photographs of Bern.
 
 ### Progress
 - create script for downloading assets, i.e., images, based on bounding box (*done*)
-- create script for manually extracting training data from assets (*done*?)
+- create script for manually extracting training data from assets (*done*)
 - [optional] explore smarter ways of obtaining training data
-- specify architecture, hyperparameters, and train classifier (<- *in progress*)
-- validate on held-out data (and repeat last step)
+- specify architecture, hyperparameters, and train classifier (*done*)
+- validate on held-out data (and repeat last step) (*done*)
+- export results in a format compatible with [the map](https://map.geo.admin.ch/)  (<- *in progress*)
 - apply to all assets from Bern
-- export results in a format compatible with [the map](https://map.geo.admin.ch/)
 
 ### Resources (data)
   - https://www.swisstopo.admin.ch/en/geodata/images/ortho/swissimage10.html
