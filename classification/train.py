@@ -56,7 +56,7 @@ def train(params, model, dataset):
             loss.backward()
             opt.step()
 
-        print(f"\repoch {e + 1}/{params['n_epochs']}; loss: {loss.item()}", end="", flush=True)
+        print(f"\repoch {e + 1}/{params['n_epochs']}; loss: {loss.item():.04f}", end="", flush=True)
 
         history_train_loss[e] = loss.item()
         history_validation_accuracy[e] = validation(model, dataset_validation)
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     torch.manual_seed(params['seed'])
 
     model = ConvNet()
-    dataset = SWISSIMAGE10cmDataset(asset_dir, examples_dir, transform=torchvision.transforms.Compose([
+    dataset = SWISSIMAGE10cmDataset(asset_dir=asset_dir, examples_dir=examples_dir, include_missclassifications=True, transform=torchvision.transforms.Compose([
         torchvision.transforms.ToTensor(),
         torchvision.transforms.RandomHorizontalFlip(),
         torchvision.transforms.RandomVerticalFlip(),

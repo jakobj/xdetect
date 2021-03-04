@@ -26,7 +26,7 @@ def determine_target_bboxes_ground_truth(*, asset_dir, examples_dir, asset):
     return target_bboxes
 
 
-def compute_precision_and_recall(n_rows, n_cols, bboxes_ground_truth, bboxes):
+def compute_precision_and_recall(*, n_rows, n_cols, bboxes_ground_truth, bboxes):
     a = np.zeros((n_rows, n_cols), dtype=bool)
     for bbox in bboxes_ground_truth:
         a[bbox[0]:bbox[2], bbox[1]:bbox[3]] = True
@@ -49,5 +49,5 @@ if __name__ == '__main__':
     target_bboxes_ground_truth = determine_target_bboxes_ground_truth(asset_dir=asset_dir, examples_dir=examples_dir, asset=asset_from_file_name(fn_test_image))
     target_bboxes = determine_target_bboxes(img, threshold=0.9999)
 
-    precision, recall = compute_precision_and_recall(len(img), len(img[0]), target_bboxes_ground_truth, target_bboxes)
+    precision, recall = compute_precision_and_recall(n_rows=len(img), n_cols=len(img[0]), bboxes_ground_truth=target_bboxes_ground_truth, bboxes=target_bboxes)
     print(f"precision: {precision:.04f}, recall: {recall:.04f}")

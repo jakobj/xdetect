@@ -8,16 +8,18 @@ from skimage import io
 
 class SWISSIMAGE10cmDataset(torch.utils.data.Dataset):
 
-    def __init__(self, asset_dir, examples_dir, transform=None):
+    def __init__(self, *, asset_dir, examples_dir, include_missclassifications=False, transform=None):
 
         positive_examples = self.get_examples_as_array(asset_dir, os.path.join(examples_dir, 'positive'))
         negative_examples = self.get_examples_as_array(asset_dir, os.path.join(examples_dir, 'negative'))
 
-        # if len(positive_examples) != len(negative_examples):
-        #     raise RuntimeError("imbalanced dataset - make sure the number of positive and negative examples are identical")
-
         self.data = np.vstack([positive_examples, negative_examples])
         self.labels = np.hstack([np.ones(len(positive_examples), dtype=np.long), np.zeros(len(negative_examples), dtype=np.long)])
+
+        if include_missclassifications:
+            missclassified_examples = self.get_examples_as_array(asset_dir, os.path.join(examples_dir, 'missclassified'))
+            self.data = np.vstack([self.data, missclassified_examples])
+            self.labels = np.hstack([self.labels, np.zeros(len(missclassified_examples), dtype=np.long)])
 
         self.transform = transform
 

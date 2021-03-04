@@ -152,6 +152,19 @@ def add_grid(ax, n_rows, n_cols):
         ax.axvline(j * MINIMAL_EDGE_LENGTH, color="0.8", lw=0.5, zorder=-1, alpha=0.5)
 
 
+def draw_bboxes(*, ax, bboxes, edgecolor):
+    for bbox in bboxes:
+        ax.add_patch(
+            Rectangle(
+                (bbox[1], bbox[0]),
+                MINIMAL_EDGE_LENGTH,
+                MINIMAL_EDGE_LENGTH,
+                edgecolor=edgecolor,
+                fill=False,
+            )
+        )
+
+
 if __name__ == "__main__":
 
     missclassifications_dir = "../data_annotated_50px/missclassified/"
@@ -198,16 +211,7 @@ if __name__ == "__main__":
     ax = fig.add_axes([0.0, 0.0, 1.0, 1.0])
     ax_ref[0] = ax
     ax.imshow(img, zorder=-2)
-    for bbox in target_bboxes:
-        ax.add_patch(
-            Rectangle(
-                (bbox[1], bbox[0]),
-                MINIMAL_EDGE_LENGTH,
-                MINIMAL_EDGE_LENGTH,
-                edgecolor="r",
-                fill=False,
-            )
-        )
+    draw_bboxes(ax=ax, bboxes=target_bboxes, edgecolor='b')
     add_grid(ax, len(img) // MINIMAL_EDGE_LENGTH, len(img[0]) // MINIMAL_EDGE_LENGTH)
     fig.canvas.mpl_connect("button_press_event", onclick)
     fig.canvas.mpl_connect("button_release_event", onrelease)
