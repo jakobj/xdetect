@@ -115,6 +115,18 @@ def store_missclassified_locations(missclassifications_dir, *, img, asset, missc
         save_patch(img[missclassified_loc_i[0]:missclassified_loc_i[2], missclassified_loc_i[1]:missclassified_loc_i[3]], output_dir=missclassifications_dir, asset=asset, bbox=missclassified_loc_i)
 
 
+def event_is_close(event, location):
+    return ((location[0] - 5 <= event.ydata and event.ydata < location[0] + 5) and
+            (location[1] - 5 <= event.xdata and event.xdata < location[1] + 5))
+
+
+def add_grid(ax, n_rows, n_cols):
+    for i in range(n_rows):
+        ax.axhline(i * MINIMAL_EDGE_LENGTH, color='0.8', lw=0.5, zorder=-1, alpha=0.5)
+    for j in range(n_cols):
+        ax.axvline(j * MINIMAL_EDGE_LENGTH, color='0.8', lw=0.5, zorder=-1, alpha=0.5)
+
+
 if __name__ == '__main__':
 
     missclassifications_dir = "../data_annotated_50px/missclassified/"
@@ -126,22 +138,37 @@ if __name__ == '__main__':
     target_bboxes = determine_target_bboxes(img, threshold=0.99)
 
     ax_ref = [None]
-    missclassified_locations = []
+    potential_location = [None, None]
+    missclassified_locations = set()
+    patches = {}
     def onclick(event):
-        y = int(event.ydata // MINIMAL_EDGE_LENGTH) * MINIMAL_EDGE_LENGTH
-        x = int(event.xdata // MINIMAL_EDGE_LENGTH) * MINIMAL_EDGE_LENGTH
-        missclassified_locations.append((y, x, y + MINIMAL_EDGE_LENGTH, x + MINIMAL_EDGE_LENGTH))
-        ax_ref[0].add_patch(Rectangle((x, y), MINIMAL_EDGE_LENGTH, MINIMAL_EDGE_LENGTH, color='b', alpha=0.4))
-        event.canvas.draw_idle()
+        potential_location[0] = event.ydata
+        potential_location[1] = event.xdata
+
+    def onrelease(event):
+        if event_is_close(event, potential_location):
+            y = int(event.ydata // MINIMAL_EDGE_LENGTH) * MINIMAL_EDGE_LENGTH
+            x = int(event.xdata // MINIMAL_EDGE_LENGTH) * MINIMAL_EDGE_LENGTH
+            bbox = (y, x, y + MINIMAL_EDGE_LENGTH, x + MINIMAL_EDGE_LENGTH)
+            if bbox not in missclassified_locations:
+                missclassified_locations.add(bbox)
+                p = ax_ref[0].add_patch(Rectangle((x, y), MINIMAL_EDGE_LENGTH, MINIMAL_EDGE_LENGTH, color='b', alpha=0.4))
+                patches[bbox] = p
+                event.canvas.draw_idle()
+            else:
+                missclassified_locations.remove(bbox)
+                patches[bbox].remove()
+                event.canvas.draw_idle()
 
     fig = plt.figure(figsize=(12, 12))
     ax = fig.add_axes([0., 0., 1., 1.])
     ax_ref[0] = ax
-    ax.imshow(img)
+    ax.imshow(img, zorder=-2)
     for bbox in target_bboxes:
         ax.add_patch(Rectangle((bbox[1], bbox[0]), MINIMAL_EDGE_LENGTH, MINIMAL_EDGE_LENGTH, edgecolor='r', fill=False))
-    # plt.savefig('test.png', dpi=1200)
+    add_grid(ax, len(img) // MINIMAL_EDGE_LENGTH, len(img[0]) // MINIMAL_EDGE_LENGTH)
     fig.canvas.mpl_connect("button_press_event", onclick)
+    fig.canvas.mpl_connect("button_release_event", onrelease)
     plt.show()
 
     store_missclassified_locations(missclassifications_dir, img=img, asset=asset_from_file_name(fn_test_image), missclassified_locations=missclassified_locations)
