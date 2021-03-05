@@ -63,20 +63,38 @@ def save_patch(*, patch, output_dir, asset_prefix, bbox):
     plt.close("all")
 
 
-def determine_target_locations(*, patch, bbox, annotated_patches):
-    target_locations = []
+def compute_midpoint(bbox):
+    return bbox[0] + (bbox[2] - bbox[0]) // 2, bbox[1] + (bbox[3] - bbox[1]) // 2
+
+
+def determine_target_locations(*, patch, bbox, sub_bboxes, annotated_bboxes):
+    target_locations = set()
+    rectangles = {}
 
     keys = "uijk"
 
     def onpress(event):
-        if event.key == keys[0]:
-            target_locations.append((bbox[0], bbox[1]))
-        elif event.key == keys[1]:
-            target_locations.append((bbox[0], bbox[3] - 1))
-        elif event.key == keys[2]:
-            target_locations.append((bbox[2] - 1, bbox[1]))
-        elif event.key == keys[3]:
-            target_locations.append((bbox[2] - 1, bbox[3] - 1))
+        if event.key in keys:
+            idx = keys.index(event.key)
+            midpoint = compute_midpoint(sub_bboxes[idx])
+            if midpoint not in target_locations:
+                target_locations.add(midpoint)
+                r = event.canvas.figure.axes[0].add_patch(
+                    Rectangle(
+                        (sub_bboxes[idx][1] - bbox[1], sub_bboxes[idx][0] - bbox[0]),
+                        sub_bboxes[idx][3] - sub_bboxes[idx][1],
+                        sub_bboxes[idx][2] - sub_bboxes[idx][0],
+                        color='g',
+                        alpha=0.4,
+                        zorder=1
+                    )
+                )
+                rectangles[midpoint] = r
+                event.canvas.draw_idle()
+            else:
+                target_locations.remove(midpoint)
+                rectangles[midpoint].remove()
+                event.canvas.draw_idle()
 
     fig = plt.figure(figsize=(12, 12))
     ax = fig.add_axes([0.0, 0.0, 1.0, 1.0])
@@ -86,9 +104,9 @@ def determine_target_locations(*, patch, bbox, annotated_patches):
         fontsize=20,
     )
     ax.imshow(patch, rasterized=True)
-    ax.axhline(len(patch) // 2, lw=3, color="r")
-    ax.axvline(len(patch[0]) // 2, lw=3, color="r")
-    draw_annotated_patches(ax=ax, bbox=bbox, annotated_patches=annotated_patches)
+    ax.axhline(len(patch) // 2, lw=3, color="0.8", zorder=2)
+    ax.axvline(len(patch[0]) // 2, lw=3, color="0.8", zorder=2)
+    draw_annotated_bboxes(ax=ax, bbox=bbox, annotated_bboxes=annotated_bboxes)
     fig.canvas.mpl_connect("key_press_event", onpress)
     plt.show()
     plt.close("all")
@@ -96,15 +114,16 @@ def determine_target_locations(*, patch, bbox, annotated_patches):
     return target_locations
 
 
-def draw_annotated_patches(*, ax, bbox, annotated_patches):
-    for annotated_patch in annotated_patches:
-        if is_loc_in_bbox(loc=annotated_patch[:2], bbox=bbox) and is_loc_in_bbox(
-            loc=annotated_patch[2:], bbox=bbox
+def draw_annotated_bboxes(*, ax, bbox, annotated_bboxes):
+    for annotated_bbox in annotated_bboxes:
+        midpoint = compute_midpoint(annotated_bbox)
+        if is_loc_in_bbox(loc=midpoint, bbox=bbox) and is_loc_in_bbox(
+            loc=midpoint, bbox=bbox
         ):
-            y = annotated_patch[0] - bbox[0]
-            Dy = annotated_patch[2] - bbox[0] - y
-            x = annotated_patch[1] - bbox[1]
-            Dx = annotated_patch[3] - bbox[1] - x
+            y = annotated_bbox[0] - bbox[0]
+            Dy = annotated_bbox[2] - bbox[0] - y
+            x = annotated_bbox[1] - bbox[1]
+            Dx = annotated_bbox[3] - bbox[1] - x
             ax.add_patch(Rectangle((x, y), Dx, Dy, color="b", alpha=0.4))
 
 
@@ -114,7 +133,7 @@ def is_loc_in_bbox(*, loc, bbox):
     )
 
 
-def process_patch(*, patch, output_dir, asset_prefix, bbox, annotated_patches):
+def process_patch(*, patch, output_dir, asset_prefix, bbox, annotated_bboxes):
 
     assert bbox[0] % config.MINIMAL_EDGE_LENGTH == 0
     assert bbox[1] % config.MINIMAL_EDGE_LENGTH == 0
@@ -128,12 +147,12 @@ def process_patch(*, patch, output_dir, asset_prefix, bbox, annotated_patches):
         )
         return
 
+    sub_patches, sub_bboxes = devide_into_patches(patch=patch, bbox=bbox)
     target_locations = determine_target_locations(
-        patch=patch, bbox=bbox, annotated_patches=annotated_patches
+        patch=patch, bbox=bbox, sub_bboxes=sub_bboxes, annotated_bboxes=annotated_bboxes
     )
 
-    patches, bboxes = devide_into_patches(patch=patch, bbox=bbox)
-    for patch_i, bbox_i in zip(patches, bboxes):
+    for patch_i, bbox_i in zip(sub_patches, sub_bboxes):
         for target_loc_i in target_locations:
             if is_loc_in_bbox(loc=target_loc_i, bbox=bbox_i):
                 process_patch(
@@ -141,7 +160,7 @@ def process_patch(*, patch, output_dir, asset_prefix, bbox, annotated_patches):
                     output_dir=output_dir,
                     asset_prefix=asset_prefix,
                     bbox=bbox_i,
-                    annotated_patches=annotated_patches,
+                    annotated_bboxes=annotated_bboxes,
                 )
                 break  # since this patch has been processed we can
                 # move on to next patch even if multiple target
@@ -175,10 +194,10 @@ def generate_positive_examples_from_assets(*, asset_dir, examples_dir, assets):
 
     for asset in assets:
         asset_prefix = asset_prefix_from_asset(asset)
-        annotated_patches = determine_annotated_patches(
+        annotated_bboxes = determine_annotated_bboxes(
             examples_dir=examples_dir, asset_prefix=asset_prefix
         )
-        if len(annotated_patches) > 0:
+        if len(annotated_bboxes) > 0:
             print(f"  asset '{asset}' has already been annotated")
             inp = ""
             while inp not in ("y", "n"):
@@ -195,7 +214,7 @@ def generate_positive_examples_from_assets(*, asset_dir, examples_dir, assets):
             output_dir=examples_dir,
             asset_prefix=asset_prefix,
             bbox=(0, 0, 10_000, 10_000),
-            annotated_patches=annotated_patches,
+            annotated_bboxes=annotated_bboxes,
         )
 
 
@@ -203,8 +222,8 @@ def mkdirp(directory):
     os.makedirs(directory, exist_ok=True)
 
 
-def determine_annotated_patches(*, examples_dir, asset_prefix):
-    annotated_patches = []
+def determine_annotated_bboxes(*, examples_dir, asset_prefix):
+    annotated_bboxes = []
     rgx = re.compile(
         os.path.join(
             examples_dir,
@@ -217,14 +236,14 @@ def determine_annotated_patches(*, examples_dir, asset_prefix):
     ):
         match = rgx.search(fn)
         y, x, yDy, xDx = int(match[1]), int(match[2]), int(match[3]), int(match[4])
-        annotated_patches.append([y, x, yDy, xDx])
-    return annotated_patches
+        annotated_bboxes.append([y, x, yDy, xDx])
+    return annotated_bboxes
 
 
 if __name__ == "__main__":
 
-    asset_dir = "../data/"
-    examples_dir = f"../data_annotated_{MINIMAL_EDGE_LENGTH}px/"
+    asset_dir = "../data/assets/"
+    examples_dir = f"../data/crosswalks/"
 
     # bbox notation (E, N, E + DE, N + DN)
     bbox = (7.42390, 46.93353, 7.45145, 46.95342)

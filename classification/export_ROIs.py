@@ -21,10 +21,6 @@ def load_metadata(*, asset_dir, identifier):
         return json.load(f)
 
 
-def compute_midpoint(bbox):
-    return bbox[0] + (bbox[2] - bbox[0]) // 2, bbox[1] + (bbox[3] - bbox[1]) // 2
-
-
 def compute_coordinates_from_bbox(*, bbox, n_img_rows, n_img_cols, coordinates_bbox):
     def convert_y(y):
         return np.round(coordinates_bbox[3] + slope_rows * y, 7)
