@@ -1,8 +1,9 @@
 import json
+import geopandas as gpd
 import glob
 import numpy as np
 import os
-import geopandas as gpd
+import pathlib
 import re
 import shapely.geometry
 from skimage import io
@@ -86,10 +87,15 @@ if __name__ == '__main__':
         for coords in coordinates:
             polygons.append(shapely.geometry.Polygon(create_polygon_from_coordinates(coords)))
 
+        asset_prefix = asset_prefix_from_asset(asset)
+        fn = os.path.join(export_dir, f'ROIs-{asset_prefix}.geojson')
         if len(polygons) > 0:
-            asset_prefix = asset_prefix_from_asset(asset)
             gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(polygons))
             gdf = gdf.set_crs("epsg:4326")
-            fn = os.path.join(export_dir, f'ROIs-{asset_prefix}.geojson')
             gdf.to_file(fn, driver='GeoJSON')
             print(f"    -> exported to {fn}")
+        else:
+            # if nothing was detected, we write an empty file to avoid
+            # reanalyzing the corresponding asset
+            pathlib.Path(fn).touch()
+            print(f"    -> written empty file {fn}")
