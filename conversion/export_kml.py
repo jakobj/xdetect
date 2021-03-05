@@ -11,14 +11,16 @@ if __name__ == '__main__':
     export_dir = "../data/export/"
     label = 'crosswalks'
 
-    points = gpd.GeoSeries()
+    rois = gpd.GeoSeries()
     for fn in glob.glob(os.path.join(export_dir, "ROIs-swissimage*-merged.geojson")):
+        print(f"  processing {fn}")
+
         try:
             gdf = gpd.read_file(fn)
         except fiona.errors.DriverError:
             continue
 
-        # points = points.append(gdf['geometry'].centroid, ignore_index=True)
-        points = points.append(gdf['geometry'], ignore_index=True)
+        # rois = rois.append(gdf['geometry'].centroid, ignore_index=True)
+        rois = rois.append(gdf['geometry'], ignore_index=True)
 
-    gpd.GeoDataFrame(geometry=points).to_file(os.path.join(export_dir, f"POIs-{label}.kml"), driver='KML')
+    gpd.GeoDataFrame(geometry=rois).to_file(os.path.join(export_dir, f"POIs-{label}.kml"), driver='KML')

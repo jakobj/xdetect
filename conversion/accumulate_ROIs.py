@@ -39,6 +39,9 @@ if __name__ == '__main__':
 
     for fn in glob.glob(os.path.join(export_dir, "ROIs-swissimage-*.geojson")):
 
+        if 'merged' in fn:  # ignore already merged ROIs
+            continue
+
         print(f"  processing {fn}")
 
         try:
