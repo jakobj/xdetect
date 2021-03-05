@@ -6,9 +6,7 @@ import re
 from skimage import io
 
 import api_wrapper
-
-
-MINIMAL_EDGE_LENGTH = 50
+import config
 
 
 def devide_into_patches(*, patch, bbox):
@@ -19,19 +17,19 @@ def devide_into_patches(*, patch, bbox):
     Dy = n_rows // 2
     Dx = n_cols // 2
 
-    if Dy % MINIMAL_EDGE_LENGTH == 0:
+    if Dy % config.MINIMAL_EDGE_LENGTH == 0:
         Dy_lower = Dy
         Dy_upper = Dy
     else:
-        Dy_lower = Dy - (Dy % MINIMAL_EDGE_LENGTH)
-        Dy_upper = Dy_lower + MINIMAL_EDGE_LENGTH
+        Dy_lower = Dy - (Dy % config.MINIMAL_EDGE_LENGTH)
+        Dy_upper = Dy_lower + config.MINIMAL_EDGE_LENGTH
 
-    if Dx % MINIMAL_EDGE_LENGTH == 0:
+    if Dx % config.MINIMAL_EDGE_LENGTH == 0:
         Dx_lower = Dx
         Dx_upper = Dx
     else:
-        Dx_lower = Dx - (Dx % MINIMAL_EDGE_LENGTH)
-        Dx_upper = Dx_lower + MINIMAL_EDGE_LENGTH
+        Dx_lower = Dx - (Dx % config.MINIMAL_EDGE_LENGTH)
+        Dx_upper = Dx_lower + config.MINIMAL_EDGE_LENGTH
 
     patches = [
         patch[:Dy_upper, :Dx_upper],
@@ -54,7 +52,7 @@ def devide_into_patches(*, patch, bbox):
 
 
 def save_patch(*, patch, output_dir, asset_prefix, bbox):
-    assert len(patch) == MINIMAL_EDGE_LENGTH
+    assert len(patch) == config.MINIMAL_EDGE_LENGTH
     plt.clf()
     plt.imshow(patch)
     fn_out = os.path.join(
@@ -118,10 +116,10 @@ def is_loc_in_bbox(*, loc, bbox):
 
 def process_patch(*, patch, output_dir, asset_prefix, bbox, annotated_patches):
 
-    assert bbox[0] % MINIMAL_EDGE_LENGTH == 0
-    assert bbox[1] % MINIMAL_EDGE_LENGTH == 0
+    assert bbox[0] % config.MINIMAL_EDGE_LENGTH == 0
+    assert bbox[1] % config.MINIMAL_EDGE_LENGTH == 0
 
-    if len(patch) <= MINIMAL_EDGE_LENGTH:
+    if len(patch) <= config.MINIMAL_EDGE_LENGTH:
         save_patch(
             patch=patch,
             output_dir=os.path.join(output_dir, "positive"),
