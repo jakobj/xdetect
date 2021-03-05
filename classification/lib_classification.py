@@ -8,7 +8,6 @@ import torchvision
 
 from classifier import ConvNet
 from segmented_image import SegmentedImage
-from train import normalize
 
 
 def determine_target_bboxes_ground_truth(*, asset_dir, examples_dir, identifier):
@@ -16,12 +15,11 @@ def determine_target_bboxes_ground_truth(*, asset_dir, examples_dir, identifier)
     rgx = re.compile(
         os.path.join(
             examples_dir,
-            "positive",
             f"{identifier}_0.1_2056-([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+).png",
         )
     )
     for fn in sorted(
-        glob.glob(os.path.join(examples_dir, "positive", f"{identifier}*.png"))
+        glob.glob(os.path.join(examples_dir, f"{identifier}*.png"))
     ):
         match = rgx.search(fn)
         y, x, yDy, xDx = int(match[1]), int(match[2]), int(match[3]), int(match[4])
@@ -29,7 +27,7 @@ def determine_target_bboxes_ground_truth(*, asset_dir, examples_dir, identifier)
     return target_bboxes
 
 
-def determine_target_bboxes(*, img, threshold=0.5):
+def determine_target_bboxes(*, img, model_file, threshold=0.5):
 
     dataset = SegmentedImage(
         img,
@@ -43,7 +41,7 @@ def determine_target_bboxes(*, img, threshold=0.5):
     data_loader = DataLoader(dataset, batch_size=dataset.n_cols, shuffle=False)
 
     model = ConvNet()
-    model.load_state_dict(torch.load("./model.torch"))
+    model.load_state_dict(torch.load(model_file))
 
     target_bboxes = []
     with torch.no_grad():
@@ -59,3 +57,9 @@ def determine_target_bboxes(*, img, threshold=0.5):
                     target_bboxes.append((rows.start, cols.start, rows.stop, cols.stop))
 
     return target_bboxes
+
+
+def normalize(t):
+    return (
+        t - t.mean()
+    ) / t.std()  # do not normalize by channel to reduce color distortion(?)

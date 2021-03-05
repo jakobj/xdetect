@@ -9,7 +9,7 @@ import shapely.geometry
 from skimage import io
 import sys
 
-from test_precision_recall import THRESHOLD
+from config import DETECTION_THRESHOLD
 import lib_classification
 
 sys.path.insert(0, "../annotation/")
@@ -49,8 +49,9 @@ def determine_exported_assets(export_dir):
 
 if __name__ == '__main__':
 
-    asset_dir = "../data/"
-    export_dir = "../data_exported/"
+    asset_dir = "../data/assets/"
+    export_dir = "../data/export/"
+    model_file = "./crosswalks.torch"
 
     exported_assets = determine_exported_assets(export_dir)
 
@@ -58,14 +59,12 @@ if __name__ == '__main__':
         asset = asset_from_filename(fn)
 
         if asset in sorted(exported_assets):
-            # inp = ''
-            # while inp not in ('y', 'n'):
-            #     inp = input(f"  asset '{asset}' already exported - reexport? (y/n)")
-            # if inp == 'n':
-            #     print(f"  skipping '{asset}'")
-            #     continue
-            print(f"  skipping '{asset}'")
-            continue
+            inp = ''
+            while inp not in ('y', 'n'):
+                inp = input(f"  asset '{asset}' already exported - reexport? (y/n) ")
+            if inp == 'n':
+                print(f"  skipping '{asset}'")
+                continue
 
         print(f"  processing asset '{asset}'")
         img = io.imread(os.path.join(asset_dir, asset))
@@ -74,7 +73,7 @@ if __name__ == '__main__':
         metadata = load_metadata(asset_dir=asset_dir, identifier=identifier)
         coordinates_bbox_asset = metadata['bbox']
 
-        target_bboxes = lib_classification.determine_target_bboxes(img=img, threshold=THRESHOLD)
+        target_bboxes = lib_classification.determine_target_bboxes(img=img, model_file=model_file, threshold=DETECTION_THRESHOLD)
         coordinates = []
         for bbox in target_bboxes:
             coordinates.append(compute_coordinates_from_bbox(bbox=bbox, n_img_rows=len(img), n_img_cols=len(img[0]), coordinates_bbox=coordinates_bbox_asset))

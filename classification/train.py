@@ -4,17 +4,10 @@ import torch
 from torch.utils.data import DataLoader
 import torchvision
 
+import config
 from classifier import ConvNet
+import lib_classification
 from swissimage_10cm_dataset import SWISSIMAGE10cmDataset
-
-
-MINIMAL_EDGE_LENGTH = 50
-
-
-def normalize(t):
-    return (
-        t - t.mean()
-    ) / t.std()  # do not normalize by channel to reduce color distortion(?)
 
 
 def validation(*, model, dataset, batch_size=None):
@@ -23,7 +16,7 @@ def validation(*, model, dataset, batch_size=None):
         batch_size = len(dataset)
 
     with torch.no_grad():
-        data_loader = DataLoader(dataset, batch_size=len(dataset), shuffle=True)
+        data_loader = DataLoader(dataset, batch_size=len(dataset), shuffle=False)
         num_correct = 0
         num_shown = 0
         for x, c in data_loader:
@@ -98,10 +91,11 @@ if __name__ == "__main__":
         "batch_size": 64,
         "lr": 0.25e-4,
         "n_epochs": 8 * 128,
+        "rrc_scale": (0.98, 1.0),
     }
 
-    asset_dir = "../data/"
-    examples_dir = f"../data_annotated_50px/"
+    asset_dir = "../data/assets/"
+    examples_dir = f"../data/crosswalks/"
 
     torch.manual_seed(params["seed"])
 
@@ -116,11 +110,11 @@ if __name__ == "__main__":
                 torchvision.transforms.RandomHorizontalFlip(),
                 torchvision.transforms.RandomVerticalFlip(),
                 torchvision.transforms.RandomResizedCrop(
-                    (MINIMAL_EDGE_LENGTH, MINIMAL_EDGE_LENGTH),
-                    scale=(0.98, 1.0),
+                    (config.MINIMAL_EDGE_LENGTH, config.MINIMAL_EDGE_LENGTH),
+                    scale=params['rrc_scale'],
                     ratio=(1.0, 1.0),
                 ),
-                torchvision.transforms.Lambda(normalize),
+                torchvision.transforms.Lambda(lib_classification.normalize),
             ]
         ),
     )
@@ -128,4 +122,4 @@ if __name__ == "__main__":
     t0 = time.time()
     model = train(params=params, model=model, dataset=dataset)
     print(f'training took {time.time() - t0:.02f}s')
-    torch.save(model.state_dict(), f"./model.torch")
+    torch.save(model.state_dict(), f"./crosswalks.torch")

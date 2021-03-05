@@ -4,8 +4,7 @@ import os
 from skimage import io
 import sys
 
-from train import MINIMAL_EDGE_LENGTH
-from test_precision_recall import THRESHOLD
+from config import DETECTION_THRESHOLD, MINIMAL_EDGE_LENGTH
 import lib_classification
 
 sys.path.insert(0, "../annotation/")
@@ -56,24 +55,26 @@ def draw_bboxes(*, ax, bboxes, edgecolor):
 
 if __name__ == "__main__":
 
-    asset_dir = "../data/"
-    examples_dir = "../data_annotated_50px/"
-    # asset = "swissimage-dop10_2018_2598-1198_0.1_2056.tif"
+    asset_dir = "../data/assets/"
+    examples_dir = "../data/crosswalks/"
+    model_file = "./crosswalks.torch"
+    asset = "swissimage-dop10_2018_2598-1198_0.1_2056.tif"
     # asset = "swissimage-dop10_2018_2598-1199_0.1_2056.tif"
     # asset = "swissimage-dop10_2018_2598-1200_0.1_2056.tif"
     # asset = "swissimage-dop10_2018_2599-1198_0.1_2056.tif"
     # asset = "swissimage-dop10_2018_2599-1199_0.1_2056.tif"
-    asset = "swissimage-dop10_2018_2600-1200_0.1_2056.tif"
+    # asset = "swissimage-dop10_2018_2600-1200_0.1_2056.tif"
+    # asset = "swissimage-dop10_2018_2598-1201_0.1_2056.tif"
 
     img = io.imread(os.path.join(asset_dir, asset))
     # img = img[:1000, :1000]
 
     target_bboxes_ground_truth = lib_classification.determine_target_bboxes_ground_truth(
         asset_dir=asset_dir,
-        examples_dir=examples_dir,
+        examples_dir=os.path.join(examples_dir, "positive"),
         identifier=identifier_from_asset(asset),
     )
-    target_bboxes = lib_classification.determine_target_bboxes(img=img, threshold=THRESHOLD)
+    target_bboxes = lib_classification.determine_target_bboxes(img=img, model_file=model_file, threshold=DETECTION_THRESHOLD)
 
     ax_ref = [None]
     potential_location = [None, None]
