@@ -37,6 +37,7 @@ def get_features_from_bbox(bbox):
 def get_assets_from_features(*, features, output_dir):
     """Download 0.1cm assets (images) for each feature and store locally."""
 
+    assets = []
     for feature in features:
         identifier = feature["id"]
 
@@ -54,6 +55,8 @@ def get_assets_from_features(*, features, output_dir):
                         f.write(file_response.content)
                 else:
                     print(f"  skipping asset '{asset}' - file exists")
+                assets.append(asset)
+    return assets
 
 
 def get_assets_from_bbox(*, bbox, output_dir):

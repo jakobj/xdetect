@@ -107,7 +107,7 @@ def draw_annotated_patches(*, ax, bbox, annotated_patches):
             Dy = annotated_patch[2] - bbox[0] - y
             x = annotated_patch[1] - bbox[1]
             Dx = annotated_patch[3] - bbox[1] - x
-            ax.add_patch(Rectangle((x, y), Dx, Dy, color="red", alpha=0.4))
+            ax.add_patch(Rectangle((x, y), Dx, Dy, color="b", alpha=0.4))
 
 
 def is_loc_in_bbox(*, loc, bbox):
@@ -170,18 +170,18 @@ def asset_from_filename(fn):
     return os.path.basename(fn)
 
 
-def generate_positive_examples_from_assets(*, asset_dir, examples_dir):
+def generate_positive_examples_from_assets(*, asset_dir, examples_dir, assets):
 
     mkdirp(examples_dir)
     mkdirp(os.path.join(examples_dir, "positive"))
 
-    for fn in glob.glob(os.path.join(asset_dir, "*_0.1_*.tif")):
-        asset_prefix = asset_prefix_from_filename(fn)
+    for asset in assets:
+        asset_prefix = asset_prefix_from_asset(asset)
         annotated_patches = determine_annotated_patches(
             examples_dir=examples_dir, asset_prefix=asset_prefix
         )
         if len(annotated_patches) > 0:
-            print(f"  asset '{os.path.basename(fn)}' has already been annotated")
+            print(f"  asset '{asset}' has already been annotated")
             inp = ""
             while inp not in ("y", "n"):
                 inp = input("  reannotate asset? (y/n) ")
@@ -190,8 +190,8 @@ def generate_positive_examples_from_assets(*, asset_dir, examples_dir):
             elif inp == "n":
                 continue
 
-        print(f"  annotating asset '{os.path.basename(fn)}'")
-        img = io.imread(fn)
+        print(f"  annotating asset '{asset}'")
+        img = io.imread(os.path.join(asset_dir, asset))
         process_patch(
             patch=img,
             output_dir=examples_dir,
@@ -231,6 +231,7 @@ if __name__ == "__main__":
     # bbox notation (E, N, E + DE, N + DN)
     bbox = (7.42390, 46.93353, 7.45145, 46.95342)
     api_wrapper.get_assets_from_bbox(bbox=bbox, output_dir=asset_dir)
+    assets = api_wrapper.get_assets_from_bbox(bbox=bbox, output_dir=asset_dir)
     generate_positive_examples_from_assets(
-        asset_dir=asset_dir, examples_dir=examples_dir
+        asset_dir=asset_dir, examples_dir=examples_dir, assets=assets,
     )
