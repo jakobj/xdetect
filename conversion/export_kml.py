@@ -20,8 +20,6 @@ if __name__ == '__main__':
         except fiona.errors.DriverError:
             continue
 
-        gdf = gdf.set_crs("epsg:4326")
-
         points = points.append(gdf['geometry'].centroid, ignore_index=True)
 
     gpd.GeoDataFrame(geometry=points).to_file(os.path.join(export_dir, f"POIs-{label}.kml"), driver='KML')

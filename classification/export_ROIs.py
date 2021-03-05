@@ -86,7 +86,6 @@ if __name__ == '__main__':
         fn = os.path.join(export_dir, f'ROIs-{asset_prefix}.geojson')
         if len(polygons) > 0:
             gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(polygons))
-            gdf = gdf.set_crs("epsg:4326")
             gdf.to_file(fn, driver='GeoJSON')
             print(f"    -> exported to {fn}")
         else:
