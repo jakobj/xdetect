@@ -14,14 +14,19 @@ The classifier itself will most likely be a convolutional neural network.
 ### Goal
 Automatically detect all pedestrian crossings in aerial photographs of Bern.
 
-### Progress
+### How To
+This repository contains all the scripts (and data!) necessary to reproduce the [results](https://slides.com/jakobj/xdetect/) of this project.
+Alternatively, you can apply the methods to whatever you'd like to detect in aerial photographs.
+See how_to.md for details.
+
+### ~Progress~
 - create script for downloading assets, i.e., images, based on bounding box (*done*)
 - create script for manually extracting training data from assets (*done*)
-- [optional] explore smarter ways of obtaining training data
+- ~[optional] explore smarter ways of obtaining training data~
 - specify architecture, hyperparameters, and train classifier (*done*)
 - validate on held-out data (and repeat last step) (*done*)
-- export results in a format compatible with [the map](https://map.geo.admin.ch/)  (<- *in progress*)
-- apply to all assets from Bern
+- export results in a format compatible with [the map](https://map.geo.admin.ch/) (*done*)
+- apply to all assets from Bern (*"done"*)
 
 ### Resources (data)
   - https://www.swisstopo.admin.ch/en/geodata/images/ortho/swissimage10.html
