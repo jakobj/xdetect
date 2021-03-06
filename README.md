@@ -8,7 +8,7 @@ As part of the [Geo.Hackmin Week](https://cividi.ch/geohackmin-en/) this project
 
 More specifically, we plan to build a classifier which receives image patches of a fixed size and returns a probability that the desired structure is contained in this patch.
 To train the classifier, we require training data consisting of image patches and their binary label ("does contain the structure"/"does not contain the structure").
-Altough there are likely many ways of obtaining such data, here we generate it manually directly from the dataset.
+Although there are likely many ways of obtaining such data, here we generate it manually directly from the dataset.
 The classifier itself will most likely be a convolutional neural network.
 
 ### Goal
@@ -34,7 +34,7 @@ See [the How To](https://github.com/jakobj/xdetect/blob/main/HOWTO.md) for detai
   - https://data.geo.admin.ch/api/stac/v0.9/
 
 ### Resources (methods)
-  - https://giswiki.hsr.ch/Zebrasteifen-Safari (mostly in german)
+  - https://giswiki.hsr.ch/Zebrasteifen-Safari (mostly in German)
   - https://github.com/geometalab/OSMDeepOD
   - https://www.cs.toronto.edu/~vmnih/docs/Mnih_Volodymyr_PhD_Thesis.pdf
   - https://github.com/robmarkcole/satellite-image-deep-learning
