@@ -18,4 +18,4 @@
 - when you're happy with your performance you can run `export_ROIs.py` to apply your traine classifier to all assets locally available and export the coordinates of each patch that has been classified as containing the target class in GeoJSON format
 
 # Converting data
-- to display your results on [the map](map.geo.admin.ch/), you can first merge intersecting patches wih `accumulate_ROIs.py` in `conversion/` and then export them as a KML file with `export_kml`
+- to display your results on [the map](map.geo.admin.ch/), you can first merge intersecting patches wih `accumulate_ROIs.py` in `conversion/` and then export them as a KML file with `export_kml.py`

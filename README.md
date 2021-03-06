@@ -17,7 +17,7 @@ Automatically detect all pedestrian crossings in aerial photographs of Bern.
 ### How To
 This repository contains all the scripts (and data!) necessary to reproduce the [results](https://slides.com/jakobj/xdetect/) of this project.
 Alternatively, you can apply the methods to whatever you'd like to detect in aerial photographs.
-See how_to.md for details.
+See [the How To](https://github.com/jakobj/xdetect/blob/main/HOWTO.md) for details.
 
 ### ~Progress~
 - create script for downloading assets, i.e., images, based on bounding box (*done*)
